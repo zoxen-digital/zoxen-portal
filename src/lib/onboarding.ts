@@ -107,17 +107,26 @@ function projectDescription(a: Partial<OnboardingAnswers>) {
  * Only now does the project get created: stage Approved, website checklist plus one task per add-on,
  * and the uploaded logo / files attached as documents.
  */
-export async function approveSubmission(sub: any, clientChoice: string, actor: CurrentUser) {
+export async function approveSubmission(
+  sub: any,
+  clientChoice: string,
+  actor: CurrentUser,
+  /** Details for a new client (edited in the approve panel); defaults come from the form. */
+  newClient: { name?: string; company?: string; email?: string; phone?: string } = {}
+) {
   if (sub.status === "Approved" || sub.status === "Converted" || sub.project) throw new HttpError("This submission is already approved");
   const a: Partial<OnboardingAnswers> = sub.data || {};
 
   let clientId: string;
   if (clientChoice === "new") {
+    const pick = (v: unknown, fallback?: string) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : fallback);
+    const name = pick(newClient.name, sub.name);
+    if (!name) throw new HttpError("Client name is required");
     const client = await Client.create({
-      name: sub.name,
-      company: sub.company,
-      email: sub.email,
-      phone: sub.phone,
+      name,
+      company: pick(newClient.company, sub.company),
+      email: pick(newClient.email, sub.email)?.toLowerCase(),
+      phone: pick(newClient.phone, sub.phone),
       website: sub.website,
       source: "Onboarding Form",
       status: "Active",

@@ -56,6 +56,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@keyframes zx-slide-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 @keyframes zx-pop {
   from {
     opacity: 0;

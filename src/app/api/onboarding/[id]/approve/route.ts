@@ -11,7 +11,7 @@ export const POST = handle(async (req: Request, { params }: Ctx) => {
   const user = await apiUser(STAFF);
   const { id } = await params;
   if (!validId(id)) return error("Submission not found", 404);
-  const { client } = await req.json().catch(() => ({}));
+  const { client, newClient } = await req.json().catch(() => ({}));
   if (typeof client !== "string" || !client) return error("Choose the client this form belongs to");
   await dbConnect();
   // Claim it first so two people approving at once cannot create two projects.
@@ -22,7 +22,7 @@ export const POST = handle(async (req: Request, { params }: Ctx) => {
   );
   if (!sub) return error("This submission is already approved (or being approved right now)");
   try {
-    return json(await approveSubmission(sub, client, user));
+    return json(await approveSubmission(sub, client, user, newClient && typeof newClient === "object" ? newClient : {}));
   } catch (e) {
     // Give it back if approval failed (e.g. wrong client), so it can be approved again.
     await Onboarding.updateOne({ _id: id, project: null, status: "Approving" }, { $set: { status: "Reviewed" } });
