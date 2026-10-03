@@ -56,6 +56,14 @@ export const DEFAULT_CHECKLIST: Record<string, string[]> = {
   other: ["Brief received", "First draft", "Client review", "Final delivery"],
 };
 
+export const TICKET_TYPES = ["Bug", "Change request", "Content update", "Question"] as const;
+export const TICKET_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
+export const TICKET_STATUSES = ["Open", "In Progress", "Waiting on Client", "Resolved", "Closed"] as const;
+export const OPEN_TICKET_STATUSES = ["Open", "In Progress", "Waiting on Client"];
+export const QUOTE_STATUSES = ["Draft", "Sent", "Accepted", "Declined", "Expired"] as const;
+export const CONTRACT_STATUSES = ["Draft", "Sent", "Signed", "Void"] as const;
+export const RECURRING_INTERVALS = ["monthly", "quarterly", "yearly"] as const;
+
 export const SERVICES = [
   "Website Development",
   "Website Redesign",

@@ -31,6 +31,8 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
   const before = meeting.status;
   const timeChanged = ("date" in data && +new Date(data.date as Date) !== +meeting.date) || ("minutes" in data && data.minutes !== meeting.minutes) || ("title" in data && data.title !== meeting.title);
   meeting.set(data);
+  // A new time means the client should get a fresh reminder.
+  if (timeChanged) meeting.reminderSentAt = undefined;
   await meeting.save();
 
   let linkSource = "existing";

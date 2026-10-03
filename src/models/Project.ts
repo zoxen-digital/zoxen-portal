@@ -72,6 +72,9 @@ const ProjectSchema = new Schema(
     onboarding: { type: Schema.Types.ObjectId, ref: "Onboarding" },
     query: { type: Schema.Types.ObjectId, ref: "Query" },
     stageChangedAt: { type: Date, default: Date.now },
+    // Last automatic "your review is waiting" reminder.
+    reviewReminderAt: Date,
+    lastMessageAt: Date,
   },
   { timestamps: true }
 );

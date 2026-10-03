@@ -22,6 +22,7 @@ import { REVISION_STATUSES } from "@/lib/constants";
 import { cn, formatDate, isOverdue } from "@/lib/utils";
 import { Badge, CardHeader, EmptyState } from "./ui";
 import { useDialogs } from "./Dialogs";
+import { useUploader } from "./FileUpload";
 import type { ProjectT } from "@/lib/types";
 
 /** Shared helper: call the API, refresh the page, toast on error. */
@@ -339,13 +340,34 @@ export function RevisionsPanel({ project }: { project: ProjectT }) {
   );
 }
 
-export function DocumentsPanel({ project }: { project: ProjectT }) {
+export function DocumentsPanel({ project, uploads }: { project: ProjectT; uploads?: boolean }) {
   const { run, busy } = useAction();
   const [f, setF] = useState({ name: "", url: "", visibleToClient: true });
+  const { upload, uploading } = useUploader();
+
+  async function uploadFiles(files: FileList) {
+    const done = await upload(files);
+    for (const a of done) {
+      await run(`up-${a.url}`, () => api(base(project, "documents"), "POST", { name: a.name, url: a.url, visibleToClient: f.visibleToClient }));
+    }
+  }
 
   return (
     <div className="card">
-      <CardHeader icon={FileText} title="Documents & files" subtitle="Links to Google Drive, Figma, contracts, brand files." />
+      <CardHeader
+        icon={FileText}
+        title="Documents & files"
+        subtitle="Upload files or add links (Google Drive, Figma, brand files)."
+        action={
+          uploads ? (
+            <label className={`btn btn-outline btn-sm cursor-pointer ${uploading ? "pointer-events-none opacity-60" : ""}`}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {uploading ? `${uploading.pct}%` : "Upload"}
+              <input type="file" multiple hidden onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }} />
+            </label>
+          ) : undefined
+        }
+      />
       <div className="px-5 pb-5">
         {project.documents.length === 0 ? (
           <EmptyState icon={FileText} title="No documents yet" />

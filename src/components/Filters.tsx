@@ -9,12 +9,15 @@ export function StatusTabs({
   options,
   params,
   counts,
+  allLabel = "All",
 }: {
   basePath: string;
   current?: string;
   options: string[];
   params: Record<string, string | undefined>;
   counts?: Record<string, number>;
+  /** Label of the first tab (no status filter). */
+  allLabel?: string;
 }) {
   const href = (status?: string) => {
     const sp = new URLSearchParams();
@@ -23,15 +26,16 @@ export function StatusTabs({
     const s = sp.toString();
     return s ? `${basePath}?${s}` : basePath;
   };
-  const all = ["All", ...options];
+  const all = [allLabel, ...options];
   return (
     <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-surface p-1">
       {all.map((o) => {
-        const active = (o === "All" && !current) || o === current;
+        const isFirst = o === allLabel;
+        const active = (isFirst && !current) || (!isFirst && o === current);
         return (
           <Link
             key={o}
-            href={href(o === "All" ? undefined : o)}
+            href={href(isFirst ? undefined : o)}
             className={cn(
               "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition",
               active ? "bg-brand-gradient text-white shadow" : "text-muted hover:bg-surface-2 hover:text-fg"

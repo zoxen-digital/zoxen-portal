@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg" },
 };
 
-// Applies the saved theme before paint. Public invoice pages always stay light.
-const themeScript = `try{if(!location.pathname.startsWith('/invoice/')&&localStorage.getItem('zx-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`;
+// Applies the saved theme before paint. Public invoice, quote and contract pages always stay light.
+const themeScript = `try{if(!/^\\/(invoice|quote|contract)\\//.test(location.pathname)&&localStorage.getItem('zx-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

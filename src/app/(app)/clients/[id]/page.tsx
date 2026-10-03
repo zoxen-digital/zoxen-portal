@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, FolderKanban, Globe, KeyRound, Mail, MapPin, Phone, Plus, RefreshCcw, Rocket, Star } from "lucide-react";
+import { ArrowLeft, BarChart3, FilePen, FileSignature, FileText, FolderKanban, Globe, KeyRound, LifeBuoy, Mail, MapPin, Phone, Plus, RefreshCcw, Repeat, Rocket, Star } from "lucide-react";
 import { isValidObjectId } from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { getSettings, teamNames } from "@/lib/settings";
@@ -13,6 +13,12 @@ import { Project } from "@/models/Project";
 import { User } from "@/models/User";
 import { Meeting } from "@/models/Meeting";
 import { Activity } from "@/models/Activity";
+import { Package } from "@/models/Package";
+import { Quote } from "@/models/Quote";
+import { Contract } from "@/models/Contract";
+import { Ticket } from "@/models/Ticket";
+import { RecurringPlan } from "@/models/RecurringPlan";
+import { StartPackageButton } from "@/components/PackageForms";
 import { Avatar, Badge, CardHeader, EmptyState, InfoRow, StatCard } from "@/components/ui";
 import { EditClientButton } from "@/components/ClientForm";
 import { EditQueryButton, NewQueryButton } from "@/components/QueryForm";
@@ -24,7 +30,7 @@ import { FollowUpButton } from "@/components/FollowUpButton";
 import { ActivityFeed } from "@/components/ProjectBits";
 import { OPEN_STAGES, QUERY_STATUSES } from "@/lib/constants";
 import { formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
-import type { ActivityT, ClientT, InvoiceT, MeetingT, ProjectT, QueryT, UserT } from "@/lib/types";
+import type { ActivityT, ClientT, ContractT, InvoiceT, MeetingT, PackageT, ProjectT, QueryT, QuoteT, RecurringPlanT, TicketT, UserT } from "@/lib/types";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await pageUser(ADMIN);
@@ -32,7 +38,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (!isValidObjectId(id)) notFound();
   await dbConnect();
 
-  const [doc, queryDocs, invoiceDocs, settings, projectDocs, userDocs, meetingDocs, activityDocs, teamDocs] = await Promise.all([
+  const [doc, queryDocs, invoiceDocs, settings, projectDocs, userDocs, meetingDocs, activityDocs, teamDocs, packageDocs, quoteDocs, contractDocs, ticketDocs, planDocs] = await Promise.all([
     Client.findById(id).lean(),
     Query.find({ client: id }).sort({ createdAt: -1 }).lean(),
     Invoice.find({ client: id }).sort({ createdAt: -1 }).lean(),
@@ -42,6 +48,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     Meeting.find({ client: id }).sort({ date: -1 }).limit(30).lean(),
     Activity.find({ client: id }).sort({ createdAt: -1 }).limit(15).lean(),
     User.find({ role: { $in: ["team_admin", "super_admin"] }, status: { $ne: "disabled" } }).sort({ name: 1 }).select("name title").lean(),
+    Package.find({ active: true }).sort({ name: 1 }).lean(),
+    Quote.find({ client: id }).sort({ createdAt: -1 }).limit(20).lean(),
+    Contract.find({ client: id }).sort({ createdAt: -1 }).limit(20).lean(),
+    Ticket.find({ client: id }).sort({ updatedAt: -1 }).limit(20).lean(),
+    RecurringPlan.find({ client: id }).sort({ nextRunAt: 1 }).lean(),
   ]);
   if (!doc) notFound();
 
@@ -65,6 +76,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
   const services = [...new Set([...projects.map((p) => p.service), ...queries.map((q) => q.service)].filter(Boolean))] as string[];
   const mailOn = mailEnabled();
+  const packages = serialize<PackageT[]>(packageDocs);
+  const quotes = serialize<QuoteT[]>(quoteDocs);
+  const contracts = serialize<ContractT[]>(contractDocs);
+  const tickets = serialize<TicketT[]>(ticketDocs);
+  const plans = serialize<RecurringPlanT[]>(planDocs);
   const queryTeam = await teamNames();
 
   return (
@@ -89,13 +105,23 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <div className="flex flex-wrap gap-2">
           <EditClientButton client={client} />
           <FollowUpButton url={`/api/clients/${client._id}/notify`} clientName={client.company || client.name} />
+          <StartPackageButton clientId={client._id} packages={packages} />
+          <Link href={`/quotes/new?client=${client._id}`} className="btn btn-outline">
+            <FilePen className="h-4 w-4" /> New Quote
+          </Link>
+          <Link href={`/contracts/new?client=${client._id}`} className="btn btn-outline">
+            <FileSignature className="h-4 w-4" /> New Contract
+          </Link>
+          <Link href={`/clients/${client._id}/report`} className="btn btn-outline">
+            <BarChart3 className="h-4 w-4" /> Monthly Report
+          </Link>
           <Link href={`/invoices/new?client=${client._id}`} className="btn btn-primary">
             <Plus className="h-4 w-4" /> Create Invoice
           </Link>
           <DeleteButton
             url={`/api/clients/${client._id}`}
             redirectTo="/clients"
-            confirmText={`Delete ${client.name}? Their queries, projects, meetings and portal logins will also be deleted. Invoices are kept.`}
+            confirmText={`Delete ${client.name}? Their queries, projects, tickets, meetings, recurring billing and portal logins will also be deleted. Invoices, quotes and contracts are kept.`}
           />
         </div>
       </div>
@@ -205,6 +231,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             )}
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <MiniList icon={FilePen} title="Quotes" empty="No quotes" items={quotes.map((q) => ({ id: q._id, href: `/quotes/${q._id}`, title: `${q.number} · ${q.title}`, status: q.status }))} />
+        <MiniList icon={FileSignature} title="Contracts" empty="No contracts" items={contracts.map((c) => ({ id: c._id, href: `/contracts/${c._id}`, title: `${c.number} · ${c.title}`, status: c.status }))} />
+        <MiniList icon={LifeBuoy} title="Support tickets" empty="No tickets" items={tickets.map((t) => ({ id: t._id, href: `/tickets/${t._id}`, title: `${t.number} · ${t.title}`, status: t.status }))} />
+        <MiniList icon={Repeat} title="Recurring billing" empty="No recurring plans" items={plans.map((p) => ({ id: p._id, href: "/recurring", title: `${p.title} · next ${formatDate(p.nextRunAt)}`, status: p.active ? "Active" : "Paused" }))} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
@@ -345,6 +378,41 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function MiniList({
+  icon: Icon,
+  title,
+  items,
+  empty,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  items: { id: string; href: string; title: string; status: string }[];
+  empty: string;
+}) {
+  return (
+    <div className="card p-5">
+      <h2 className="mb-3 flex items-center gap-2 font-bold text-heading">
+        <Icon className="h-4 w-4 text-brand dark:text-[#8f9bff]" /> {title}
+        <span className="text-sm font-medium text-muted">({items.length})</span>
+      </h2>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted">{empty}</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.slice(0, 6).map((i) => (
+            <li key={i.id}>
+              <Link href={i.href} className="flex items-center justify-between gap-2 text-sm hover:text-brand">
+                <span className="truncate">{i.title}</span>
+                <Badge status={i.status} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

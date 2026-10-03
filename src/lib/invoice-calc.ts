@@ -41,3 +41,8 @@ export function deriveStatus(current: string, totals: Totals) {
   if (totals.paid > 0) return "Partially Paid";
   return "Unpaid";
 }
+
+/** Sum of qty × rate (no discount or tax). Used for package prices. */
+export function itemsTotal(items: { qty: number; rate: number }[]) {
+  return round(items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0));
+}

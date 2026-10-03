@@ -55,6 +55,8 @@ const InvoiceSchema = new Schema(
     confirmedAt: Date,
     lastReminderAt: Date,
     reminderCount: { type: Number, default: 0 },
+    // Automatic overdue reminders already sent: 1 = after 3 days, 2 = after 7 days, 3 = after 14 days.
+    autoReminderStage: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -137,6 +137,20 @@ export function SettingsForm({ initial }: { initial: SettingsT }) {
       </section>
 
       <section className="card p-5">
+        <h2 className="mb-1 font-bold text-heading">Contract template</h2>
+        <p className="mb-4 text-xs text-muted">
+          Starting text for new contracts. Leave empty to use the built-in agreement. Placeholders: {"{{date}} {{company_name}} {{client_name}} {{client_company}} {{project}} {{total}} {{payment_terms}}"}
+        </p>
+        <textarea
+          className="input font-mono text-xs"
+          rows={10}
+          value={s.contractTemplate || ""}
+          onChange={(e) => setS((x) => ({ ...x, contractTemplate: e.target.value }))}
+          placeholder="Leave empty to use the built-in service agreement."
+        />
+      </section>
+
+      <section className="card p-5">
         <h2 className="mb-1 font-bold text-heading">Team members</h2>
         <p className="mb-4 text-xs text-muted">Used for &quot;Assigned to&quot; on queries and the workload report.</p>
         <div className="flex gap-2">

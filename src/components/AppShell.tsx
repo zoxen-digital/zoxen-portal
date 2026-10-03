@@ -7,6 +7,12 @@ import {
   BarChart3,
   KeyRound,
   Rocket,
+  Sun,
+  LifeBuoy,
+  FileSignature,
+  FilePen,
+  Repeat,
+  Package,
   UserCog,
   type LucideIcon,
   ChevronDown,
@@ -34,11 +40,17 @@ import type { RoleT } from "@/lib/types";
 
 const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid, roles: ["super_admin"] },
+  { href: "/today", label: "My Day", icon: Sun, roles: ["super_admin", "team_admin"] },
   { href: "/projects", label: "Projects", icon: Rocket, roles: ["super_admin", "team_admin"] },
+  { href: "/tickets", label: "Support Tickets", icon: LifeBuoy, roles: ["super_admin", "team_admin"] },
   { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
   { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
   { href: "/onboarding", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin"] },
+  { href: "/quotes", label: "Quotes", icon: FilePen, roles: ["super_admin"] },
+  { href: "/contracts", label: "Contracts", icon: FileSignature, roles: ["super_admin"] },
   { href: "/invoices", label: "Invoices", icon: FileText, roles: ["super_admin"] },
+  { href: "/recurring", label: "Recurring Invoices", icon: Repeat, roles: ["super_admin"] },
+  { href: "/packages", label: "Packages", icon: Package, roles: ["super_admin"] },
   { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin"] },
   { href: "/users", label: "Team & Portal Users", icon: UserCog, roles: ["super_admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
@@ -61,7 +73,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const nav = NAV.filter((n) => n.roles.includes(role));
-  const home = role === "super_admin" ? "/dashboard" : "/projects";
+  const home = role === "super_admin" ? "/dashboard" : "/today";
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -100,7 +112,7 @@ export function AppShell({
           )}
         </div>
 
-        <nav className={cn("mt-2 flex-1 space-y-1", mini ? "px-2" : "px-4")}>
+        <nav className={cn("mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pb-2", mini ? "px-2" : "px-4")}>
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
@@ -110,7 +122,7 @@ export function AppShell({
                 href={item.href}
                 title={mini ? item.label : undefined}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                  "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
                   mini && "justify-center px-0",
                   active
                     ? "bg-brand-gradient text-white shadow-lg shadow-brand/25"
@@ -137,7 +149,7 @@ export function AppShell({
             </button>
           </div>
         ) : (
-          <div className="relative m-4 overflow-hidden rounded-2xl border border-line bg-surface-2/60 p-4">
+          <div className="relative m-4 hidden overflow-hidden rounded-2xl border border-line bg-surface-2/60 p-4 [@media(min-height:900px)]:block">
             <svg className="pointer-events-none absolute -right-6 -top-4 h-32 w-48" viewBox="0 0 200 120" aria-hidden="true">
               <ellipse cx="100" cy="60" rx="95" ry="30" transform="rotate(-25 100 60)" fill="none" stroke="#6C3BF5" strokeOpacity="0.4" />
               <circle cx="178" cy="22" r="5" fill="#6C3BF5" fillOpacity="0.7" />

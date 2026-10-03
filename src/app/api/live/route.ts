@@ -11,6 +11,11 @@ import { Meeting } from "@/models/Meeting";
 import { Query } from "@/models/Query";
 import { Client } from "@/models/Client";
 import { Onboarding } from "@/models/Onboarding";
+import { Ticket } from "@/models/Ticket";
+import { Quote } from "@/models/Quote";
+import { Contract } from "@/models/Contract";
+import { RecurringPlan } from "@/models/RecurringPlan";
+import { ticketScope } from "@/lib/tickets";
 import type { Model } from "mongoose";
 
 /** Time of the newest change in a collection the user can see (0 if none). */
@@ -31,15 +36,18 @@ export const GET = handle(async () => {
 
   const parts: Promise<number>[] = [latest(Notification as Model<unknown>, { user: me }), latest(Project as Model<unknown>, scope)];
   if (user.role === "super_admin") {
-    for (const m of [Invoice, Meeting, Query, Client, Onboarding, Activity]) parts.push(latest(m as Model<unknown>));
+    for (const m of [Invoice, Meeting, Query, Client, Onboarding, Activity, Ticket, Quote, Contract, RecurringPlan]) parts.push(latest(m as Model<unknown>));
   } else if (user.role === "team_admin") {
-    parts.push(latest(Query as Model<unknown>, { assignedTo: user.name }));
+    parts.push(latest(Query as Model<unknown>, { assignedTo: user.name }), latest(Ticket as Model<unknown>, await ticketScope(user)));
   } else {
     const client = { client: scope.client };
     parts.push(
       latest(Invoice as Model<unknown>, client),
       latest(Meeting as Model<unknown>, client),
-      latest(Activity as Model<unknown>, { ...client, visibleToClient: true })
+      latest(Activity as Model<unknown>, { ...client, visibleToClient: true }),
+      latest(Ticket as Model<unknown>, client),
+      latest(Quote as Model<unknown>, { ...client, status: { $ne: "Draft" } }),
+      latest(Contract as Model<unknown>, { ...client, status: { $in: ["Sent", "Signed"] } })
     );
   }
   const stamp = Math.max(...(await Promise.all(parts)));

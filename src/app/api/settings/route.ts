@@ -20,6 +20,7 @@ const FIELDS = [
   "paymentDetails",
   "teamMembers",
   "meetingLink",
+  "contractTemplate",
 ];
 
 export const GET = handle(async () => {

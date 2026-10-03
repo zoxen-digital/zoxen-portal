@@ -75,3 +75,17 @@ A copy-paste example is on the Onboarding Submissions page.
 
 The logo is drawn as SVG in `src/components/Logo.tsx` so it adapts to light and dark mode.
 To use the official file instead, add it to `public/` and swap the `<LogoMark />` for an `<img>`.
+
+## Sales, support and automation
+
+| Feature | Where | What it does |
+| --- | --- | --- |
+| Project chat + files | Project page / portal project page | Client and team talk inside the project; files upload to Vercel Blob (25 MB max) |
+| Support tickets | `/tickets`, portal → Support | Bugs / change requests with priority, owner and due date; client can close or reopen |
+| Packages | `/packages`, client page → Start a package | Ready-made offers: one click creates a quote, or a project (checklist, timeline) + invoice |
+| Quotes | `/quotes`, public `/quote/<id>` | Client accepts online by typing their name; creates the project and invoice automatically |
+| Contracts | `/contracts`, public `/contract/<id>` | E-sign with name, time, IP and browser recorded; template in Settings |
+| Recurring invoices | `/recurring` | Monthly / quarterly / yearly billing created and sent automatically |
+| My Day | `/today` | Overdue, due today, waiting on you, waiting on client, today's meetings |
+| Monthly report | Client page → Monthly Report, portal → Reports | Work done, revisions, invoices and payments for a month; PDF or send to client |
+| Daily job | `/api/cron/daily` (09:00 PKT) | Recurring invoices, overdue reminders (3/7/14 days), review reminders, meeting reminders, quote expiry, team morning digest |

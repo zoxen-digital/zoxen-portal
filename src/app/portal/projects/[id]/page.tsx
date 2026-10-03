@@ -12,6 +12,7 @@ import { ProgressBar } from "@/components/ProjectForm";
 import { ActivityFeed, StageTimeline } from "@/components/ProjectBits";
 import { FeedbackForm, ReviewActions } from "@/components/PortalActions";
 import { LocalTime } from "@/components/LocalTime";
+import { ChatThread } from "@/components/ChatThread";
 import { formatDate, serialize } from "@/lib/utils";
 import type { ActivityT, ProjectT } from "@/lib/types";
 
@@ -113,12 +114,21 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-muted">Reply to your project manager by email or WhatsApp with what is needed. This disappears once we receive it.</p>
+          <p className="mt-3 text-xs text-muted">
+            Send what is needed in the <a href="#chat" className="font-semibold text-brand hover:underline dark:text-[#8f9bff]">project chat</a> below (you can attach files). This disappears once we receive it.
+          </p>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          <ChatThread
+            endpoint={`/api/portal/projects/${p._id}/messages`}
+            side="client"
+            title="Message the team"
+            subtitle="Questions, feedback and files: everything about this project in one place."
+            uploads={!!process.env.BLOB_READ_WRITE_TOKEN}
+          />
           {p.clientUpdate && (
             <div className="card p-5">
               <h2 className="mb-2 flex items-center gap-2 font-bold text-heading">

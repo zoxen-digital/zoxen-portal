@@ -6,6 +6,9 @@ import { Project } from "@/models/Project";
 import { Activity } from "@/models/Activity";
 import { Meeting } from "@/models/Meeting";
 import { User } from "@/models/User";
+import { Ticket } from "@/models/Ticket";
+import { Message } from "@/models/Message";
+import { RecurringPlan } from "@/models/RecurringPlan";
 import { error, handle, json, pick, validId } from "@/lib/api";
 import { CLIENT_FIELDS } from "@/lib/fields";
 
@@ -41,6 +44,10 @@ export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
     Project.deleteMany({ client: id }),
     Activity.deleteMany({ client: id }),
     Meeting.deleteMany({ client: id }),
+    Ticket.deleteMany({ client: id }),
+    Message.deleteMany({ client: id }),
+    // Stop billing a client that no longer exists.
+    RecurringPlan.deleteMany({ client: id }),
     // Portal logins of a deleted client must stop working.
     User.deleteMany({ role: "client", client: id }),
   ]);

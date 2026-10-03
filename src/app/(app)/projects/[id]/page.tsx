@@ -16,6 +16,7 @@ import { ChecklistPanel, ClientUpdatePanel, DocumentsPanel, IssuesPanel, NotesPa
 import { ActivityFeed, StageTimeline } from "@/components/ProjectBits";
 import { LocalTime } from "@/components/LocalTime";
 import { FollowUpButton } from "@/components/FollowUpButton";
+import { ChatThread } from "@/components/ChatThread";
 import { PROJECT_STAGES, STAGE_INFO, type ProjectStage } from "@/lib/constants";
 import { formatDate, isOverdue, serialize } from "@/lib/utils";
 import type { ActivityT, ClientT, ProjectT } from "@/lib/types";
@@ -118,11 +119,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
+          <ChatThread
+            endpoint={`/api/projects/${project._id}/messages`}
+            side="team"
+            title="Client chat"
+            subtitle="The client sees this conversation on their portal."
+            uploads={!!process.env.BLOB_READ_WRITE_TOKEN}
+          />
           <ClientUpdatePanel project={project} />
           <IssuesPanel project={project} team={members.map((m) => m.name)} />
           <RevisionsPanel project={project} />
           <ChecklistPanel project={project} />
-          <DocumentsPanel project={project} />
+          <DocumentsPanel project={project} uploads={!!process.env.BLOB_READ_WRITE_TOKEN} />
         </div>
 
         <div className="space-y-6">

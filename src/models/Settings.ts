@@ -22,6 +22,8 @@ const SettingsSchema = new Schema(
     teamMembers: { type: [String], default: [] },
     // Backup meeting room (e.g. a permanent Google Meet link) used when Google Calendar is not connected.
     meetingLink: String,
+    // Starting text for new contracts. Empty = built-in template.
+    contractTemplate: String,
   },
   { timestamps: true }
 );

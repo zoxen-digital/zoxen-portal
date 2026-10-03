@@ -132,6 +132,7 @@ export interface SettingsT {
   paymentDetails: PaymentDetails;
   teamMembers: string[];
   meetingLink?: string;
+  contractTemplate?: string;
 }
 
 export type RoleT = "super_admin" | "team_admin" | "client";
@@ -276,4 +277,127 @@ export interface NotificationT {
   link?: string;
   read: boolean;
   createdAt: string;
+}
+
+export interface AttachmentT {
+  name: string;
+  url: string;
+  size?: number;
+  contentType?: string;
+}
+
+export interface MessageT {
+  _id: string;
+  project?: string;
+  ticket?: string;
+  authorName?: string;
+  authorRole?: RoleT;
+  body: string;
+  attachments: AttachmentT[];
+  createdAt: string;
+}
+
+export interface TicketT {
+  _id: string;
+  number: string;
+  client: ClientT | string | null;
+  project?: Pick<ProjectT, "_id" | "title"> | string | null;
+  title: string;
+  description?: string;
+  type: string;
+  priority: string;
+  status: string;
+  assignee?: Pick<UserT, "_id" | "name"> | string | null;
+  dueDate?: string;
+  createdByName?: string;
+  createdByRole?: string;
+  attachments: AttachmentT[];
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PackageT {
+  _id: string;
+  name: string;
+  service?: string;
+  description?: string;
+  items: InvoiceItem[];
+  currency: string;
+  checklist: string[];
+  revisionLimit: number;
+  durationDays: number;
+  active: boolean;
+}
+
+export interface QuoteT {
+  _id: string;
+  number: string;
+  publicId: string;
+  client: ClientT | string | null;
+  title: string;
+  intro?: string;
+  items: InvoiceItem[];
+  extraCosts: ExtraCost[];
+  discountType: "fixed" | "percent";
+  discountValue: number;
+  taxPercent: number;
+  currency: string;
+  validUntil?: string;
+  notes?: string;
+  terms?: string;
+  status: string;
+  totals: Omit<Totals, "paid" | "balance">;
+  package?: string | null;
+  projectSetup?: { service?: string; checklist?: string[]; revisionLimit?: number; durationDays?: number };
+  sentAt?: string;
+  viewedAt?: string;
+  acceptedAt?: string;
+  acceptedName?: string;
+  acceptedIp?: string;
+  declinedAt?: string;
+  declineReason?: string;
+  invoice?: string | null;
+  project?: string | null;
+  createdAt: string;
+}
+
+export interface ContractT {
+  _id: string;
+  number: string;
+  publicId: string;
+  client: ClientT | string | null;
+  project?: string | null;
+  quote?: string | null;
+  title: string;
+  body: string;
+  status: string;
+  sentAt?: string;
+  viewedAt?: string;
+  signedName?: string;
+  signedAt?: string;
+  signedIp?: string;
+  signedUA?: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
+export interface RecurringPlanT {
+  _id: string;
+  client: ClientT | string | null;
+  title: string;
+  items: InvoiceItem[];
+  discountType: "fixed" | "percent";
+  discountValue: number;
+  taxPercent: number;
+  currency: string;
+  interval: "monthly" | "quarterly" | "yearly";
+  nextRunAt: string;
+  dueDays: number;
+  notes?: string;
+  terms?: string;
+  active: boolean;
+  lastRunAt?: string;
+  lastInvoice?: string | null;
+  invoicesCreated: number;
 }

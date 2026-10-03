@@ -35,8 +35,8 @@ export async function notifyClient(clientId: string, m: Message, actor?: { name:
         subject: m.title,
         heading: m.title,
         lines: [`Hi ${client.name.split(" ")[0]},`, m.body],
-        // Without a portal login, only public links (like invoices) are useful.
-        button: m.link?.startsWith("/invoice/") ? { label: m.button || "Open", url: appUrl(m.link) } : undefined,
+        // Without a portal login, only public links (invoices, quotes, contracts) are useful.
+        button: m.link && /^\/(invoice|quote|contract)\//.test(m.link) ? { label: m.button || "Open", url: appUrl(m.link) } : undefined,
       });
       if (sent) via = "email";
     }
