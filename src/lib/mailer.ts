@@ -26,7 +26,11 @@ function esc(s: string) {
 }
 
 export function appUrl(path = "") {
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "") + path;
+  let base = process.env.NEXT_PUBLIC_APP_URL || "";
+  // On Vercel, never hand out localhost links: fall back to the project's production domain.
+  const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelDomain && (!base || /localhost|127\.0\.0\.1/.test(base))) base = `https://${vercelDomain}`;
+  return (base || "http://localhost:3000").replace(/\/$/, "") + path;
 }
 
 type Mail = {
