@@ -1,3 +1,4 @@
+import { ADMIN, apiUser } from "@/lib/session";
 import { dbConnect } from "@/lib/db";
 import { Onboarding } from "@/models/Onboarding";
 import { error, handle, json, validId } from "@/lib/api";
@@ -6,6 +7,7 @@ import { ONBOARDING_STATUSES } from "@/lib/constants";
 type Ctx = { params: Promise<{ id: string }> };
 
 export const PATCH = handle(async (req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   const { status } = await req.json();
@@ -16,6 +18,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
 });
 
 export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();

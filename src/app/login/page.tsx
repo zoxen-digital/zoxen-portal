@@ -23,7 +23,7 @@ export default function LoginPage() {
       <div className="card relative w-full max-w-md p-8 shadow-xl shadow-brand/5">
         <Logo className="mb-8" />
         <h1 className="text-2xl font-bold text-heading">Welcome back</h1>
-        <p className="mt-1 text-sm text-muted">Sign in to manage clients, queries and invoices.</p>
+        <p className="mt-1 text-sm text-muted">Sign in to your projects, invoices and updates.</p>
         <Suspense>
           <LoginForm />
         </Suspense>

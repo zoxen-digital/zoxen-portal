@@ -1,42 +1,70 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, FolderKanban, Globe, Mail, MapPin, Phone, Plus } from "lucide-react";
+import { ArrowLeft, FileText, FolderKanban, Globe, KeyRound, Mail, MapPin, Phone, Plus, RefreshCcw, Rocket, Star } from "lucide-react";
 import { isValidObjectId } from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { getSettings } from "@/lib/settings";
+import { getSettings, teamNames } from "@/lib/settings";
+import { mailEnabled } from "@/lib/mailer";
+import { ADMIN, pageUser } from "@/lib/session";
 import { Client } from "@/models/Client";
 import { Query } from "@/models/Query";
 import { Invoice } from "@/models/Invoice";
-import { Avatar, Badge, CardHeader, EmptyState, InfoRow } from "@/components/ui";
+import { Project } from "@/models/Project";
+import { User } from "@/models/User";
+import { Meeting } from "@/models/Meeting";
+import { Activity } from "@/models/Activity";
+import { Avatar, Badge, CardHeader, EmptyState, InfoRow, StatCard } from "@/components/ui";
 import { EditClientButton } from "@/components/ClientForm";
 import { EditQueryButton, NewQueryButton } from "@/components/QueryForm";
 import { DeleteButton, StatusSelect } from "@/components/actions";
-import { QUERY_STATUSES } from "@/lib/constants";
+import { NewProjectButton, ProgressBar, type TeamOption } from "@/components/ProjectForm";
+import { NewUserButton, UserActions } from "@/components/UserForm";
+import { MeetingsPanel } from "@/components/MeetingsPanel";
+import { ActivityFeed } from "@/components/ProjectBits";
+import { OPEN_STAGES, QUERY_STATUSES } from "@/lib/constants";
 import { formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
-import type { ClientT, InvoiceT, QueryT } from "@/lib/types";
+import type { ActivityT, ClientT, InvoiceT, MeetingT, ProjectT, QueryT, UserT } from "@/lib/types";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await pageUser(ADMIN);
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
   await dbConnect();
 
-  const [doc, queryDocs, invoiceDocs, settings] = await Promise.all([
+  const [doc, queryDocs, invoiceDocs, settings, projectDocs, userDocs, meetingDocs, activityDocs, teamDocs] = await Promise.all([
     Client.findById(id).lean(),
     Query.find({ client: id }).sort({ createdAt: -1 }).lean(),
     Invoice.find({ client: id }).sort({ createdAt: -1 }).lean(),
     getSettings(),
+    Project.find({ client: id }).sort({ updatedAt: -1 }).lean(),
+    User.find({ role: "client", client: id }).sort({ name: 1 }).lean(),
+    Meeting.find({ client: id }).sort({ date: -1 }).limit(30).lean(),
+    Activity.find({ client: id }).sort({ createdAt: -1 }).limit(15).lean(),
+    User.find({ role: { $in: ["team_admin", "super_admin"] }, status: { $ne: "disabled" } }).sort({ name: 1 }).select("name title").lean(),
   ]);
   if (!doc) notFound();
 
   const client = serialize<ClientT>(doc);
   const queries = serialize<QueryT[]>(queryDocs);
   const invoices = serialize<InvoiceT[]>(invoiceDocs);
+  const projects = serialize<ProjectT[]>(projectDocs);
+  const portalUsers = serialize<UserT[]>(userDocs);
+  const meetings = serialize<MeetingT[]>(meetingDocs);
+  const activity = serialize<ActivityT[]>(activityDocs);
+  const team = serialize<TeamOption[]>(teamDocs);
   const cur = settings.defaultCurrency;
   const active = invoices.filter((i) => !["Draft", "Cancelled"].includes(i.status));
   const invoiced = active.reduce((s, i) => s + (i.totals?.total || 0), 0);
   const paid = active.reduce((s, i) => s + (i.totals?.paid || 0), 0);
   const balance = active.reduce((s, i) => s + (i.totals?.balance || 0), 0);
   const clientOptions = [{ _id: client._id, name: client.name, company: client.company }];
+  const activeProjects = projects.filter((p) => (OPEN_STAGES as string[]).includes(p.stage)).length;
+  const revisionRounds = projects.reduce((s, p) => s + p.revisions.length, 0);
+  const ratings = projects.map((p) => p.feedback?.rating).filter((r): r is number => !!r);
+  const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const services = [...new Set([...projects.map((p) => p.service), ...queries.map((q) => q.service)].filter(Boolean))] as string[];
+  const mailOn = mailEnabled();
+  const queryTeam = await teamNames();
 
   return (
     <div className="space-y-6">
@@ -65,7 +93,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <DeleteButton
             url={`/api/clients/${client._id}`}
             redirectTo="/clients"
-            confirmText={`Delete ${client.name}? Their queries will also be deleted. Invoices are kept.`}
+            confirmText={`Delete ${client.name}? Their queries, projects, meetings and portal logins will also be deleted. Invoices are kept.`}
           />
         </div>
       </div>
@@ -83,6 +111,105 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="text-sm text-muted">Outstanding balance</div>
           <div className={`mt-1 text-2xl font-bold ${balance > 0 ? "text-red-500" : "text-heading"}`}>{formatMoney(balance, cur)}</div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard icon={Rocket} label="Projects" value={`${activeProjects} active / ${projects.length}`} tone="blue" />
+        <StatCard icon={RefreshCcw} label="Revision rounds" value={revisionRounds} tone="amber" />
+        <StatCard icon={Star} label="Feedback" value={avgRating ? `${avgRating.toFixed(1)} / 5` : "—"} hint={ratings.length ? `${ratings.length} rating${ratings.length > 1 ? "s" : ""}` : "No ratings yet"} tone="violet" />
+        <StatCard icon={KeyRound} label="Portal logins" value={portalUsers.length} hint={portalUsers.some((u) => u.status === "active") ? "Client has access" : "No active login yet"} tone="green" />
+      </div>
+      {services.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-muted">Services:</span>
+          {services.map((s) => (
+            <span key={s} className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-fg">{s}</span>
+          ))}
+        </div>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="card overflow-hidden xl:col-span-2">
+          <CardHeader
+            icon={Rocket}
+            title="Projects"
+            subtitle="Live status the client sees on their portal"
+            action={<NewProjectButton clients={clientOptions} team={team} clientId={client._id} label="New Project" outline />}
+          />
+          {projects.length === 0 ? (
+            <EmptyState icon={Rocket} title="No projects yet" text="Create one to start tracking stages, approvals and revisions." />
+          ) : (
+            <ul className="divide-y divide-line px-5 pb-3">
+              {projects.map((p) => {
+                const late = isOverdue(p.dueDate, ["Live", "Completed"].includes(p.stage));
+                return (
+                  <li key={p._id}>
+                    <Link href={`/projects/${p._id}`} className="group flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-heading group-hover:text-brand">{p.title}</div>
+                        <div className="text-xs text-muted">
+                          {p.service} · due {formatDate(p.dueDate)}
+                          {p.issues.some((i) => i.status !== "Resolved") && <span className="ml-2 font-semibold text-amber-600">open issues</span>}
+                        </div>
+                      </div>
+                      <div className="flex w-full items-center gap-2 sm:w-40">
+                        <ProgressBar value={p.progress} />
+                        <span className="w-9 text-right text-xs font-semibold">{p.progress}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge status={p.stage} />
+                        {late && <Badge status="Overdue" />}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="card">
+          <CardHeader
+            icon={KeyRound}
+            title="Portal access"
+            subtitle="Who at this client can log in"
+            action={
+              <NewUserButton
+                clients={clientOptions}
+                mailOn={mailOn}
+                presetClient={{ _id: client._id, name: client.name, email: portalUsers.some((u) => u.email === client.email) ? "" : client.email }}
+                label="Invite"
+                outline
+              />
+            }
+          />
+          <div className="px-5 pb-5">
+            {portalUsers.length === 0 ? (
+              <p className="text-sm text-muted">No portal login yet. Invite the client so they can follow progress, approve work and see invoices.</p>
+            ) : (
+              <ul className="space-y-3">
+                {portalUsers.map((u) => (
+                  <li key={u._id} className="flex items-center gap-3">
+                    <Avatar name={u.name} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-heading">{u.name}</div>
+                      <div className="truncate text-xs text-muted">{u.email}</div>
+                    </div>
+                    <Badge status={u.status === "invited" ? "Invited" : u.status === "disabled" ? "Disabled" : "Active"} />
+                    <UserActions user={u} clients={clientOptions} isMe={false} mailOn={mailOn} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <MeetingsPanel clientId={client._id} meetings={meetings} projects={projects.map((p) => ({ _id: p._id, title: p.title }))} />
+        </div>
+        <ActivityFeed items={activity} title="Recent activity" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
@@ -117,7 +244,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             icon={FolderKanban}
             title="Queries & Projects"
             subtitle={`${queries.length} total`}
-            action={<NewQueryButton clients={clientOptions} team={settings.teamMembers} clientId={client._id} label="Add Query" outline />}
+            action={<NewQueryButton clients={clientOptions} team={queryTeam} clientId={client._id} label="Add Query" outline />}
           />
           {queries.length === 0 ? (
             <EmptyState icon={FolderKanban} title="No queries for this client yet" text="Log what the client asked for so the team can track it." />
@@ -154,7 +281,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                         <td className="whitespace-nowrap font-semibold">{q.amount ? formatMoney(q.amount, cur) : "—"}</td>
                         <td>
                           <div className="flex justify-end gap-1">
-                            <EditQueryButton query={q} clients={clientOptions} team={settings.teamMembers} />
+                            <EditQueryButton query={q} clients={clientOptions} team={queryTeam} />
                             <DeleteButton small url={`/api/queries/${q._id}`} confirmText="Delete this query?" />
                           </div>
                         </td>

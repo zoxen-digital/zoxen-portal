@@ -1,3 +1,4 @@
+import { ADMIN, apiUser } from "@/lib/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Client } from "@/models/Client";
@@ -6,6 +7,7 @@ import { getSettings } from "@/lib/settings";
 import { clientSnapshot, newPublicId, nextInvoiceNumber, normalizeInvoiceBody, recompute } from "@/lib/invoices";
 
 export const POST = handle(async (req: Request) => {
+  await apiUser(ADMIN);
   await dbConnect();
   const body = await req.json();
   if (!body.client || !validId(body.client)) return error("Please select a client");

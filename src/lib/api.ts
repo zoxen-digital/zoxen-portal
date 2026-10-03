@@ -13,11 +13,19 @@ export function validId(id: string) {
   return isValidObjectId(id);
 }
 
+/** Throw from a route to answer with a specific status and message. */
+export class HttpError extends Error {
+  constructor(message: string, public status = 400) {
+    super(message);
+  }
+}
+
 export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response>) {
   return async (...args: A) => {
     try {
       return await fn(...args);
     } catch (e) {
+      if (e instanceof HttpError) return error(e.message, e.status);
       console.error(e);
       const message = e instanceof Error ? e.message : "Something went wrong";
       return error(message, 500);

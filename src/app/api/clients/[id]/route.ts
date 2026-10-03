@@ -1,12 +1,18 @@
+import { ADMIN, apiUser } from "@/lib/session";
 import { dbConnect } from "@/lib/db";
 import { Client } from "@/models/Client";
 import { Query } from "@/models/Query";
+import { Project } from "@/models/Project";
+import { Activity } from "@/models/Activity";
+import { Meeting } from "@/models/Meeting";
+import { User } from "@/models/User";
 import { error, handle, json, pick, validId } from "@/lib/api";
 import { CLIENT_FIELDS } from "@/lib/fields";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export const GET = handle(async (_req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -15,6 +21,7 @@ export const GET = handle(async (_req: Request, { params }: Ctx) => {
 });
 
 export const PUT = handle(async (req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -25,10 +32,18 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
 });
 
 export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
-  await Query.deleteMany({ client: id });
+  await Promise.all([
+    Query.deleteMany({ client: id }),
+    Project.deleteMany({ client: id }),
+    Activity.deleteMany({ client: id }),
+    Meeting.deleteMany({ client: id }),
+    // Portal logins of a deleted client must stop working.
+    User.deleteMany({ role: "client", client: id }),
+  ]);
   await Client.findByIdAndDelete(id);
   return json({ ok: true });
 });

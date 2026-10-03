@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { FolderKanban } from "lucide-react";
 import { dbConnect } from "@/lib/db";
-import { getSettings } from "@/lib/settings";
+import { getSettings, teamNames } from "@/lib/settings";
+import { STAFF, pageUser } from "@/lib/session";
 import { Client } from "@/models/Client";
 import { Query } from "@/models/Query";
 import { Avatar, Badge, EmptyState, PageHeader } from "@/components/ui";
@@ -12,11 +13,13 @@ import { QUERY_STATUSES } from "@/lib/constants";
 import { escapeRegex, formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
 import type { ClientT, QueryT } from "@/lib/types";
 
-export const metadata = { title: "Queries & Projects" };
+export const metadata = { title: "Queries" };
 
 type SP = Promise<{ q?: string; status?: string; assigned?: string }>;
 
 export default async function QueriesPage({ searchParams }: { searchParams: SP }) {
+  const user = await pageUser(STAFF);
+  const isOwner = user.role === "super_admin";
   const sp = await searchParams;
   await dbConnect();
   const settings = await getSettings();
@@ -30,7 +33,10 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
   } else if (sp.status) {
     filter.status = sp.status;
   }
-  if (sp.assigned) filter.assignedTo = sp.assigned;
+  // Team members only ever see what is assigned to them.
+  const scope: Record<string, unknown> = isOwner ? {} : { assignedTo: user.name };
+  if (sp.assigned && isOwner) filter.assignedTo = sp.assigned;
+  Object.assign(filter, scope);
   if (sp.q) {
     const rx = { $regex: escapeRegex(sp.q), $options: "i" };
     const matchingClients = await Client.find({ $or: [{ name: rx }, { company: rx }] }).select("_id").lean();
@@ -38,10 +44,10 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
   }
 
   const [docs, clientDocs, statusAgg, overdueCount] = await Promise.all([
-    Query.find(filter).sort({ createdAt: -1 }).limit(500).populate("client", "name company").lean(),
-    Client.find().sort({ name: 1 }).select("name company").lean(),
-    Query.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }]),
-    Query.countDocuments({ status: { $in: ["Pending", "In Progress"] }, dueDate: { $lt: today } }),
+    Query.find(filter).select(isOwner ? "" : "-amount").sort({ createdAt: -1 }).limit(500).populate("client", "name company").lean(),
+    isOwner ? Client.find().sort({ name: 1 }).select("name company").lean() : [],
+    Query.aggregate([{ $match: scope }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
+    Query.countDocuments({ ...scope, status: { $in: ["Pending", "In Progress"] }, dueDate: { $lt: today } }),
   ]);
 
   const queries = serialize<QueryT[]>(docs);
@@ -51,13 +57,13 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
     counts[s._id] = s.n;
     counts.All! += s.n;
   }
-  const team = settings.teamMembers;
+  const team = isOwner ? await teamNames() : [];
   const cur = settings.defaultCurrency;
 
   return (
     <div>
-      <PageHeader title="Queries & Projects" subtitle="Track every client request from pending to closed, with an owner and a due date.">
-        <NewQueryButton clients={clients} team={team} />
+      <PageHeader title={isOwner ? "Queries" : "My Queries"} subtitle="Track every client request from pending to closed, with an owner and a due date.">
+        {isOwner && <NewQueryButton clients={clients} team={team} />}
       </PageHeader>
 
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -99,7 +105,7 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
                   <th>Priority</th>
                   <th>Assigned To</th>
                   <th>Due</th>
-                  <th>Amount</th>
+                  {isOwner && <th>Amount</th>}
                   <th></th>
                 </tr>
               </thead>
@@ -140,12 +146,14 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
                       </td>
                       <td className="whitespace-nowrap">{q.assignedTo || <span className="text-red-500">Unassigned</span>}</td>
                       <td className={`whitespace-nowrap ${late ? "font-semibold text-red-500" : "text-muted"}`}>{formatDate(q.dueDate)}</td>
-                      <td className="whitespace-nowrap font-semibold text-heading">{q.amount ? formatMoney(q.amount, cur) : "—"}</td>
+                      {isOwner && <td className="whitespace-nowrap font-semibold text-heading">{q.amount ? formatMoney(q.amount, cur) : "—"}</td>}
                       <td>
-                        <div className="flex justify-end gap-1">
-                          <EditQueryButton query={q} clients={clients} team={team} />
-                          <DeleteButton small url={`/api/queries/${q._id}`} confirmText="Delete this query?" />
-                        </div>
+                        {isOwner && (
+                          <div className="flex justify-end gap-1">
+                            <EditQueryButton query={q} clients={clients} team={team} />
+                            <DeleteButton small url={`/api/queries/${q._id}`} confirmText="Delete this query?" />
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

@@ -4,6 +4,58 @@ export const CLIENT_STATUSES = ["Active", "Onboarding", "Inactive"] as const;
 export const INVOICE_STATUSES = ["Draft", "Unpaid", "Partially Paid", "Paid", "Cancelled"] as const;
 export const ONBOARDING_STATUSES = ["New", "Reviewed", "Converted", "Rejected"] as const;
 
+export const PROJECT_STAGES = [
+  "Onboarding",
+  "Approved",
+  "In Progress",
+  "Internal Review",
+  "Client Review",
+  "Revision",
+  "Launch",
+  "Live",
+  "Completed",
+  "On Hold",
+  "Blocked",
+] as const;
+export type ProjectStage = (typeof PROJECT_STAGES)[number];
+
+/** What the client sees for each internal stage, and the default progress for it. */
+export const STAGE_INFO: Record<ProjectStage, { client: string; progress: number }> = {
+  Onboarding: { client: "Onboarding", progress: 5 },
+  Approved: { client: "Getting Started", progress: 10 },
+  "In Progress": { client: "In Progress", progress: 40 },
+  "Internal Review": { client: "In Progress", progress: 65 },
+  "Client Review": { client: "Ready for Your Review", progress: 75 },
+  Revision: { client: "Revisions in Progress", progress: 80 },
+  Launch: { client: "Preparing Launch", progress: 90 },
+  Live: { client: "Live", progress: 100 },
+  Completed: { client: "Completed", progress: 100 },
+  "On Hold": { client: "On Hold", progress: 0 },
+  Blocked: { client: "In Progress", progress: 0 },
+};
+
+/** The main road a project travels, shown as a timeline. On Hold / Blocked sit outside it. */
+export const STAGE_PATH: ProjectStage[] = ["Onboarding", "Approved", "In Progress", "Client Review", "Launch", "Live", "Completed"];
+export const OPEN_STAGES: ProjectStage[] = PROJECT_STAGES.filter((s) => !["Live", "Completed"].includes(s));
+
+export const ISSUE_STATUSES = ["Open", "Resolved"] as const;
+export const REVISION_STATUSES = ["Requested", "In Progress", "Done"] as const;
+
+export const DEFAULT_CHECKLIST: Record<string, string[]> = {
+  website: [
+    "Content and logo received",
+    "Design approved",
+    "Pages developed",
+    "Mobile responsive check",
+    "Forms tested",
+    "SEO basics (titles, meta, sitemap)",
+    "Domain connected",
+    "SSL active",
+    "Speed check",
+  ],
+  other: ["Brief received", "First draft", "Client review", "Final delivery"],
+};
+
 export const SERVICES = [
   "Website Development",
   "Website Redesign",

@@ -130,3 +130,144 @@ export interface SettingsT {
   paymentDetails: PaymentDetails;
   teamMembers: string[];
 }
+
+export type RoleT = "super_admin" | "team_admin" | "client";
+
+export interface UserT {
+  _id: string;
+  name: string;
+  email: string;
+  role: RoleT;
+  client?: ClientT | string | null;
+  title?: string;
+  phone?: string;
+  status: "invited" | "active" | "disabled";
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface ChecklistItem {
+  _id: string;
+  label: string;
+  done: boolean;
+  doneAt?: string;
+}
+
+export interface ProjectIssue {
+  _id: string;
+  title: string;
+  details?: string;
+  status: string;
+  owner?: string;
+  dueDate?: string;
+  visibleToClient: boolean;
+  resolvedAt?: string;
+  createdAt: string;
+}
+
+export interface ProjectRevision {
+  _id: string;
+  round: number;
+  request: string;
+  links?: string;
+  status: string;
+  requestedBy?: string;
+  extra?: boolean;
+  completedAt?: string;
+  createdAt: string;
+}
+
+export interface ProjectDocument {
+  _id: string;
+  name: string;
+  url: string;
+  visibleToClient: boolean;
+  addedBy?: string;
+  createdAt: string;
+}
+
+export interface ProjectT {
+  _id: string;
+  client: ClientT | string | null;
+  title: string;
+  service?: string;
+  description?: string;
+  stage: string;
+  progress: number;
+  team: (Pick<UserT, "_id" | "name" | "email"> | string)[];
+  startDate?: string;
+  dueDate?: string;
+  previewUrl?: string;
+  liveUrl?: string;
+  domain?: string;
+  clientUpdate?: string;
+  internalNotes?: string;
+  revisionLimit: number;
+  checklist: ChecklistItem[];
+  issues: ProjectIssue[];
+  revisions: ProjectRevision[];
+  documents: ProjectDocument[];
+  approvedAt?: string;
+  approvedBy?: string;
+  feedback?: { rating?: number; comment?: string; at?: string };
+  stageChangedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The slice of a project a client is allowed to see. Stage is already the client-facing label. */
+export interface PortalProjectT {
+  _id: string;
+  title: string;
+  service?: string;
+  description?: string;
+  stage: string;
+  inReview: boolean;
+  progress: number;
+  startDate?: string;
+  dueDate?: string;
+  previewUrl?: string;
+  liveUrl?: string;
+  domain?: string;
+  clientUpdate?: string;
+  revisionLimit: number;
+  checklist: { label: string; done: boolean }[];
+  actionsNeeded: { _id: string; title: string; details?: string; dueDate?: string }[];
+  revisions: ProjectRevision[];
+  documents: ProjectDocument[];
+  approvedAt?: string;
+  feedback?: { rating?: number; comment?: string; at?: string };
+  team: string[];
+  updatedAt: string;
+}
+
+export interface ActivityT {
+  _id: string;
+  project?: string;
+  client?: string;
+  actor?: string;
+  actorRole?: string;
+  text: string;
+  visibleToClient: boolean;
+  createdAt: string;
+}
+
+export interface MeetingT {
+  _id: string;
+  client: string;
+  project?: string | null;
+  title: string;
+  date: string;
+  link?: string;
+  notes?: string;
+  createdBy?: string;
+}
+
+export interface NotificationT {
+  _id: string;
+  title: string;
+  body?: string;
+  link?: string;
+  read: boolean;
+  createdAt: string;
+}

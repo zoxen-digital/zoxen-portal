@@ -13,8 +13,41 @@ export const QUERY_FIELDS = [
   "notes",
 ];
 
+export const USER_FIELDS = ["name", "email", "role", "client", "title", "phone"];
+
+/** Project fields any staff member on the project may edit. */
+export const PROJECT_FIELDS = [
+  "title",
+  "service",
+  "description",
+  "stage",
+  "progress",
+  "startDate",
+  "dueDate",
+  "previewUrl",
+  "liveUrl",
+  "domain",
+  "clientUpdate",
+  "internalNotes",
+];
+
+export function cleanProject(data: Record<string, unknown>) {
+  if ("progress" in data) {
+    const n = Number(data.progress);
+    data.progress = Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : undefined;
+    if (data.progress === undefined) delete data.progress;
+  }
+  if ("revisionLimit" in data) data.revisionLimit = Math.max(0, Math.round(Number(data.revisionLimit) || 0));
+  for (const k of ["startDate", "dueDate"]) {
+    if (k in data) data[k] = data[k] ? new Date(String(data[k])) : null;
+  }
+  return data;
+}
+
 export function cleanQuery(data: Record<string, unknown>) {
   if ("amount" in data) data.amount = Number(data.amount) || 0;
   if ("dueDate" in data) data.dueDate = data.dueDate ? new Date(String(data.dueDate)) : null;
   return data;
 }
+
+export const MEETING_FIELDS = ["client", "project", "title", "date", "link", "notes"];

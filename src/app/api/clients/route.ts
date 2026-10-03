@@ -1,3 +1,4 @@
+import { ADMIN, apiUser } from "@/lib/session";
 import { dbConnect } from "@/lib/db";
 import { Client } from "@/models/Client";
 import { error, handle, json, pick } from "@/lib/api";
@@ -6,6 +7,7 @@ import { CLIENT_FIELDS } from "@/lib/fields";
 
 
 export const GET = handle(async (req: Request) => {
+  await apiUser(ADMIN);
   await dbConnect();
   const q = new URL(req.url).searchParams.get("q")?.trim();
   const filter = q
@@ -16,6 +18,7 @@ export const GET = handle(async (req: Request) => {
 });
 
 export const POST = handle(async (req: Request) => {
+  await apiUser(ADMIN);
   await dbConnect();
   const body = await req.json();
   const data = pick(body, CLIENT_FIELDS);

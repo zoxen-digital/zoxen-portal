@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { SESSION_COOKIE, createSession } from "@/lib/auth";
+import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS, createSession, homeFor, type Role } from "@/lib/auth";
+import { checkPassword, hashPassword } from "@/lib/password";
+import { dbConnect } from "@/lib/db";
+import { User } from "@/models/User";
 
 function safeEqual(a: string, b: string) {
   const ab = Buffer.from(a);
@@ -8,31 +11,66 @@ function safeEqual(a: string, b: string) {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
-export async function POST(req: Request) {
-  const { email, password } = await req.json().catch(() => ({}));
-  const adminEmail = process.env.ADMIN_EMAIL;
+/**
+ * The .env admin login creates the first super admin account the first time it is used,
+ * and keeps working afterwards as a recovery login for that account.
+ */
+async function envAdmin(email: string, password: string) {
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) return null;
+  if (!safeEqual(email, adminEmail) || !safeEqual(password, adminPassword)) return null;
 
-  if (!adminEmail || !adminPassword) {
-    return NextResponse.json({ error: "ADMIN_EMAIL and ADMIN_PASSWORD are not set in .env.local" }, { status: 500 });
+  const existing = await User.findOne({ email: adminEmail });
+  if (existing) {
+    if (existing.role !== "super_admin" || existing.status === "disabled") return null;
+    if (existing.status !== "active") {
+      existing.status = "active";
+      await existing.save();
+    }
+    return existing;
   }
-
-  const ok =
-    typeof email === "string" &&
-    typeof password === "string" &&
-    safeEqual(email.trim().toLowerCase(), adminEmail.trim().toLowerCase()) &&
-    safeEqual(password, adminPassword);
-
-  if (!ok) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
-
-  const token = await createSession(adminEmail);
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+  return User.create({
+    name: process.env.ADMIN_NAME || "Admin",
+    email: adminEmail,
+    role: "super_admin",
+    status: "active",
+    passwordHash: await hashPassword(adminPassword),
   });
-  return res;
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const password = typeof body.password === "string" ? body.password : "";
+  if (!email || !password) return NextResponse.json({ error: "Enter your email and password" }, { status: 400 });
+
+  try {
+    await dbConnect();
+    let user = await User.findOne({ email }).select("+passwordHash");
+    const passwordOk = user?.status === "active" && (await checkPassword(password, user.passwordHash));
+    if (!passwordOk) user = await envAdmin(email, password);
+
+    if (!user) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    }
+
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    const role = user.role as Role;
+    const token = await createSession({
+      uid: String(user._id),
+      role,
+      name: user.name,
+      email: user.email,
+      cid: user.client ? String(user.client) : undefined,
+    });
+    const res = NextResponse.json({ ok: true, home: homeFor(role) });
+    res.cookies.set(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS);
+    return res;
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Login failed" }, { status: 500 });
+  }
 }

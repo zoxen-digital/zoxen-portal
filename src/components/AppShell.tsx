@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Bell,
   BarChart3,
+  KeyRound,
+  Rocket,
+  UserCog,
+  type LucideIcon,
   ChevronDown,
   ChevronsLeft,
   ChevronRight,
@@ -24,30 +27,40 @@ import {
 import { Logo, LogoMark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar } from "./ui";
+import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
+import type { RoleT } from "@/lib/types";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "/clients", label: "Clients", icon: Users },
-  { href: "/queries", label: "Queries / Projects", icon: FolderKanban },
-  { href: "/onboarding", label: "Onboarding Submissions", icon: ClipboardList },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
+const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid, roles: ["super_admin"] },
+  { href: "/projects", label: "Projects", icon: Rocket, roles: ["super_admin", "team_admin"] },
+  { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
+  { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
+  { href: "/onboarding", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin"] },
+  { href: "/invoices", label: "Invoices", icon: FileText, roles: ["super_admin"] },
+  { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin"] },
+  { href: "/users", label: "Team & Portal Users", icon: UserCog, roles: ["super_admin"] },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
 ];
+
+const ROLE_LABEL: Record<RoleT, string> = { super_admin: "Super Admin", team_admin: "Team", client: "Client" };
 
 export function AppShell({
   children,
   userName,
   userEmail,
+  role,
   newSubmissions,
 }: {
   children: React.ReactNode;
   userName: string;
   userEmail: string;
+  role: RoleT;
   newSubmissions: number;
 }) {
   const pathname = usePathname();
+  const nav = NAV.filter((n) => n.roles.includes(role));
+  const home = role === "super_admin" ? "/dashboard" : "/projects";
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -72,7 +85,7 @@ export function AppShell({
     return (
       <div className="flex h-full flex-col">
         <div className={cn("flex h-20 items-center px-5", mini ? "justify-center px-2" : "justify-between")}>
-          <Link href="/dashboard">{mini ? <LogoMark className="h-9 w-auto" id="zx-mini" /> : <Logo />}</Link>
+          <Link href={home}>{mini ? <LogoMark className="h-9 w-auto" id="zx-mini" /> : <Logo />}</Link>
           {isMobile ? (
             <button onClick={() => setMobileOpen(false)} className="btn btn-ghost btn-sm px-2" aria-label="Close menu">
               <X className="h-4 w-4" />
@@ -87,7 +100,7 @@ export function AppShell({
         </div>
 
         <nav className={cn("mt-2 flex-1 space-y-1", mini ? "px-2" : "px-4")}>
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
@@ -166,7 +179,7 @@ export function AppShell({
           onMenu={() => setMobileOpen(true)}
           userName={userName}
           userEmail={userEmail}
-          newSubmissions={newSubmissions}
+          role={role}
         />
         <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">{children}</main>
       </div>
@@ -178,13 +191,14 @@ function Topbar({
   onMenu,
   userName,
   userEmail,
-  newSubmissions,
+  role,
 }: {
   onMenu: () => void;
   userName: string;
   userEmail: string;
-  newSubmissions: number;
+  role: RoleT;
 }) {
+  const isOwner = role === "super_admin";
   const router = useRouter();
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
@@ -223,7 +237,7 @@ function Topbar({
         </button>
 
         <form
-          className="relative hidden max-w-xl flex-1 md:block"
+          className={cn("relative hidden max-w-xl flex-1", isOwner && "md:block")}
           onSubmit={(e) => {
             e.preventDefault();
             if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
@@ -243,27 +257,24 @@ function Topbar({
         </form>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <Link href="/clients?new=1" className="btn btn-primary hidden sm:inline-flex">
-            <Plus className="h-4 w-4" /> New Client
-          </Link>
-          <Link href="/invoices/new" className="btn btn-primary">
-            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Create Invoice</span>
-          </Link>
+          {isOwner && (
+            <>
+              <Link href="/clients?new=1" className="btn btn-primary hidden sm:inline-flex">
+                <Plus className="h-4 w-4" /> New Client
+              </Link>
+              <Link href="/invoices/new" className="btn btn-primary">
+                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Create Invoice</span>
+              </Link>
+            </>
+          )}
           <ThemeToggle />
-          <Link href="/onboarding" className="relative btn btn-ghost px-2.5" aria-label="Onboarding submissions">
-            <Bell className="h-5 w-5" />
-            {newSubmissions > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {newSubmissions > 9 ? "9+" : newSubmissions}
-              </span>
-            )}
-          </Link>
+          <NotificationBell />
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2.5 rounded-xl p-1 pr-2 hover:bg-surface-2">
               <Avatar name={userName} className="h-9 w-9" />
               <div className="hidden text-left leading-tight xl:block">
                 <div className="text-sm font-semibold text-heading">{userName}</div>
-                <div className="text-xs text-muted">Admin</div>
+                <div className="text-xs text-muted">{ROLE_LABEL[role]}</div>
               </div>
               <ChevronDown className="hidden h-4 w-4 text-muted xl:block" />
             </button>
@@ -273,9 +284,14 @@ function Topbar({
                   <div className="text-sm font-semibold text-heading">{userName}</div>
                   <div className="truncate text-xs text-muted">{userEmail}</div>
                 </div>
-                <Link href="/settings" onClick={() => setMenu(false)} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
-                  <Settings className="h-4 w-4" /> Settings
+                <Link href="/account" onClick={() => setMenu(false)} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                  <KeyRound className="h-4 w-4" /> My account
                 </Link>
+                {isOwner && (
+                  <Link href="/settings" onClick={() => setMenu(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                    <Settings className="h-4 w-4" /> Settings
+                  </Link>
+                )}
                 <button onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-500/10">
                   <LogOut className="h-4 w-4" /> Sign out
                 </button>

@@ -1,3 +1,4 @@
+import { ADMIN, apiUser } from "@/lib/session";
 import { dbConnect } from "@/lib/db";
 import { Settings } from "@/models/Settings";
 import { handle, json, pick } from "@/lib/api";
@@ -20,9 +21,13 @@ const FIELDS = [
   "teamMembers",
 ];
 
-export const GET = handle(async () => json(await getSettings()));
+export const GET = handle(async () => {
+  await apiUser(ADMIN);
+  return json(await getSettings());
+});
 
 export const PUT = handle(async (req: Request) => {
+  await apiUser(ADMIN);
   await dbConnect();
   const data = pick(await req.json(), FIELDS);
   if ("defaultTaxPercent" in data) data.defaultTaxPercent = Number(data.defaultTaxPercent) || 0;

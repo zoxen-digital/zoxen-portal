@@ -21,8 +21,9 @@ export function LoginForm() {
       body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
     });
     if (res.ok) {
+      const data = await res.json().catch(() => ({}));
       const next = params.get("next");
-      router.replace(next && next.startsWith("/") ? next : "/dashboard");
+      router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : data.home || "/dashboard");
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));

@@ -1,3 +1,4 @@
+import { ADMIN, apiUser } from "@/lib/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Client } from "@/models/Client";
@@ -9,6 +10,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Full edit from the invoice form. Recorded payments are kept as they are. */
 export const PUT = handle(async (req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -44,6 +46,7 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
 
 /** Quick actions: change status, clear all payments (mark unpaid) or refresh client details. */
 export const PATCH = handle(async (req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -66,6 +69,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
 });
 
 export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
+  await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();

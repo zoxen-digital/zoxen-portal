@@ -1,5 +1,6 @@
 import { dbConnect } from "./db";
 import { Settings } from "@/models/Settings";
+import { User } from "@/models/User";
 import { serialize } from "./utils";
 import type { SettingsT } from "./types";
 
@@ -23,4 +24,13 @@ export async function getSettings(): Promise<SettingsT> {
   s.teamMembers = s.teamMembers || [];
   g._zxSettings = { value: s, at: Date.now() };
   return s;
+}
+
+/** Names that queries can be assigned to: Settings team list plus every staff login (so team admins see their queries). */
+export async function teamNames() {
+  const [s, users] = await Promise.all([
+    getSettings(),
+    User.find({ role: { $in: ["team_admin", "super_admin"] }, status: { $ne: "disabled" } }).select("name").lean<{ name: string }[]>(),
+  ]);
+  return [...new Set([...s.teamMembers, ...users.map((u) => u.name)])].sort((a, b) => a.localeCompare(b));
 }
