@@ -39,8 +39,8 @@ export function OnboardingActions({
   const [busy, setBusy] = useState(false);
   const linked = item.client as ClientT | string | null | undefined;
   const linkedId = typeof linked === "string" ? linked : linked?._id || "";
-  // Best guess: the client this form was sent to, or one with the same email.
-  const guess = linkedId || clients.find((c) => c.email && item.email && c.email.toLowerCase() === item.email.toLowerCase())?._id || "";
+  // Best guess: the client this form was sent to, or one with the same email, otherwise a new client.
+  const guess = linkedId || clients.find((c) => c.email && item.email && c.email.toLowerCase() === item.email.toLowerCase())?._id || "new";
   const [client, setClient] = useState(guess);
 
   useEffect(() => {
@@ -85,9 +85,9 @@ export function OnboardingActions({
   }
 
   const approveBox = (
-    <div className="rounded-2xl border border-brand/30 bg-brand/5 p-4">
-      <div className="mb-2 text-sm font-bold text-heading">Approve and tag to client</div>
-      <p className="mb-3 text-xs text-muted">The form is saved under the client, a project starts (stage Approved, website checklist and add-ons as tasks) and the client is notified.</p>
+    <div className="sticky bottom-0 -mx-5 -mb-5 mt-6 rounded-b-2xl border-t border-brand/30 bg-surface p-4 shadow-[0_-8px_24px_-12px_rgba(38,57,232,0.35)]">
+      <div className="mb-1 text-sm font-bold text-heading">Approve and tag to client</div>
+      <p className="mb-3 text-xs text-muted">Choose the client (or create a new one from this form), then Approve. A project starts with the checklist, add-ons and files, and the client is notified.</p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <select className="input" value={client} onChange={(e) => setClient(e.target.value)}>
           <option value="">Choose client...</option>
@@ -143,8 +143,8 @@ export function OnboardingActions({
             </button>
           )}
         </div>
-        {!isApproved(item.status) && item.status !== "Rejected" && <div className="mb-6">{approveBox}</div>}
         {details}
+        {!isApproved(item.status) && item.status !== "Rejected" && approveBox}
       </Modal>
     </div>
   );
