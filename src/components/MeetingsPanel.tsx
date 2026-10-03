@@ -17,8 +17,25 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
   const empty = { title: "", date: "", link: "", notes: "", project: "" };
   const [f, setF] = useState(empty);
   const now = Date.now();
-  const upcoming = meetings.filter((m) => new Date(m.date).getTime() >= now).reverse();
-  const past = meetings.filter((m) => new Date(m.date).getTime() < now);
+  const requests = meetings.filter((m) => m.status === "Requested").reverse();
+  const booked = meetings.filter((m) => m.status !== "Requested" && m.status !== "Declined");
+  const upcoming = booked.filter((m) => new Date(m.date).getTime() >= now).reverse();
+  const past = booked.filter((m) => new Date(m.date).getTime() < now);
+
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [joinLink, setJoinLink] = useState("");
+
+  async function respond(m: MeetingT, status: "Scheduled" | "Declined") {
+    try {
+      await api(`/api/meetings/${m._id}`, "PUT", status === "Scheduled" ? { status, link: joinLink } : { status });
+      setConfirming(null);
+      setJoinLink("");
+      notify(status === "Scheduled" ? "Meeting confirmed. The client was notified." : "Request declined. The client was notified.");
+      router.refresh();
+    } catch (e) {
+      notify((e as Error).message, "error");
+    }
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +90,7 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
       <CardHeader
         icon={CalendarDays}
         title="Meetings"
-        subtitle={`${upcoming.length} upcoming · ${past.length} past`}
+        subtitle={`${requests.length ? `${requests.length} request${requests.length > 1 ? "s" : ""} waiting · ` : ""}${upcoming.length} upcoming · ${past.length} past`}
         action={
           <button onClick={() => setOpen((o) => !o)} className="btn btn-outline btn-sm">
             <Plus className="h-4 w-4" /> Add
@@ -103,7 +120,38 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
             </div>
           </form>
         )}
-        {meetings.length === 0 ? (
+        {requests.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {requests.map((m) => (
+              <div key={m._id} className="rounded-xl border border-violet/30 bg-violet/5 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 text-sm">
+                    <div className="text-xs font-bold uppercase tracking-wide text-violet">Client request</div>
+                    <div className="font-semibold text-heading">{m.title}</div>
+                    <div className="text-xs text-muted">
+                      Preferred: <LocalTime iso={m.date} /> · by {m.createdBy}
+                    </div>
+                    {m.notes && <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{m.notes}</p>}
+                  </div>
+                  {confirming !== m._id && (
+                    <div className="flex gap-2">
+                      <button onClick={() => respond(m, "Declined")} className="btn btn-outline btn-sm">Decline</button>
+                      <button onClick={() => setConfirming(m._id)} className="btn btn-primary btn-sm">Confirm</button>
+                    </div>
+                  )}
+                </div>
+                {confirming === m._id && (
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input className="input" autoFocus value={joinLink} onChange={(e) => setJoinLink(e.target.value)} placeholder="Google Meet / Zoom link (optional)" />
+                    <button onClick={() => setConfirming(null)} className="btn btn-outline">Back</button>
+                    <button onClick={() => respond(m, "Scheduled")} className="btn btn-primary">Confirm meeting</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {booked.length === 0 && requests.length === 0 ? (
           <p className="py-3 text-center text-sm text-muted">No meetings yet.</p>
         ) : (
           <>

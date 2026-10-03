@@ -20,6 +20,7 @@ import { DeleteButton, StatusSelect } from "@/components/actions";
 import { NewProjectButton, ProgressBar, type TeamOption } from "@/components/ProjectForm";
 import { NewUserButton, UserActions } from "@/components/UserForm";
 import { MeetingsPanel } from "@/components/MeetingsPanel";
+import { FollowUpButton } from "@/components/FollowUpButton";
 import { ActivityFeed } from "@/components/ProjectBits";
 import { OPEN_STAGES, QUERY_STATUSES } from "@/lib/constants";
 import { formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
@@ -87,6 +88,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
         <div className="flex flex-wrap gap-2">
           <EditClientButton client={client} />
+          <FollowUpButton url={`/api/clients/${client._id}/notify`} clientName={client.company || client.name} />
           <Link href={`/invoices/new?client=${client._id}`} className="btn btn-primary">
             <Plus className="h-4 w-4" /> Create Invoice
           </Link>

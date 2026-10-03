@@ -15,6 +15,7 @@ import { EditProjectButton, ProgressBar, type TeamOption } from "@/components/Pr
 import { ChecklistPanel, ClientUpdatePanel, DocumentsPanel, IssuesPanel, NotesPanel, RevisionsPanel } from "@/components/ProjectPanels";
 import { ActivityFeed, StageTimeline } from "@/components/ProjectBits";
 import { LocalTime } from "@/components/LocalTime";
+import { FollowUpButton } from "@/components/FollowUpButton";
 import { PROJECT_STAGES, STAGE_INFO, type ProjectStage } from "@/lib/constants";
 import { formatDate, isOverdue, serialize } from "@/lib/utils";
 import type { ActivityT, ClientT, ProjectT } from "@/lib/types";
@@ -88,6 +89,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 <Globe className="h-4 w-4" /> Live site
               </a>
             )}
+            {client && <FollowUpButton url={`/api/projects/${project._id}/notify`} clientName={client.company || client.name} label="Follow up client" />}
             {isOwner && <EditProjectButton project={project} clients={clients} team={team} />}
             {isOwner && <DeleteButton url={`/api/projects/${project._id}`} redirectTo="/projects" confirmText={`Delete "${project.title}" and its history? This cannot be undone.`} />}
           </div>

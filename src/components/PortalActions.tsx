@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, MessageSquarePlus, Star } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Loader2, MessageSquarePlus, Star } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 import { Modal } from "./Modal";
@@ -153,5 +153,71 @@ export function FeedbackForm({ projectId, initial }: { projectId: string; initia
         {busy && <Loader2 className="h-4 w-4 animate-spin" />} {initial?.rating ? "Update feedback" : "Send feedback"}
       </button>
     </form>
+  );
+}
+
+export function RequestMeetingButton({ projects }: { projects: { _id: string; title: string }[] }) {
+  const router = useRouter();
+  const { notify } = useDialogs();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({ title: "", date: "", notes: "", project: "" });
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      // datetime-local has no zone: convert here so the team sees the time the client meant.
+      await api("/api/portal/meetings", "POST", { ...f, date: new Date(f.date).toISOString() });
+      notify("Request sent. We will confirm the meeting shortly.");
+      setOpen(false);
+      setF({ title: "", date: "", notes: "", project: "" });
+      router.refresh();
+    } catch (e) {
+      notify((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="btn btn-outline btn-sm w-full">
+        <CalendarPlus className="h-4 w-4" /> Request a meeting
+      </button>
+      <Modal open={open} onClose={() => setOpen(false)} title="Request a meeting" subtitle="Pick a time that suits you. Our team will confirm it.">
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="label" htmlFor="m-title">What would you like to discuss? *</label>
+            <input id="m-title" className="input" required value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="e.g. Review the homepage design" />
+          </div>
+          <div>
+            <label className="label" htmlFor="m-date">Preferred date and time *</label>
+            <input id="m-date" className="input" type="datetime-local" required value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
+          </div>
+          {projects.length > 0 && (
+            <div>
+              <label className="label" htmlFor="m-proj">Project</label>
+              <select id="m-proj" className="input" value={f.project} onChange={(e) => setF({ ...f, project: e.target.value })}>
+                <option value="">General</option>
+                {projects.map((p) => (
+                  <option key={p._id} value={p._id}>{p.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="label" htmlFor="m-notes">Notes (optional)</label>
+            <textarea id="m-notes" className="input" rows={3} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} placeholder="Other times that work for you, topics, who will join..." />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setOpen(false)} className="btn btn-outline">Cancel</button>
+            <button className="btn btn-primary" disabled={busy}>
+              {busy && <Loader2 className="h-4 w-4 animate-spin" />} Send request
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }

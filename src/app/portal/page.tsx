@@ -12,6 +12,7 @@ import { ProgressBar } from "@/components/ProjectForm";
 import { ActivityFeed } from "@/components/ProjectBits";
 import { LocalTime } from "@/components/LocalTime";
 import { PushToggle } from "@/components/NotificationBell";
+import { RequestMeetingButton } from "@/components/PortalActions";
 import { formatDate, formatMoney, serialize } from "@/lib/utils";
 import type { ActivityT, InvoiceT, MeetingT, ProjectT } from "@/lib/types";
 
@@ -24,7 +25,7 @@ export default async function PortalHome() {
   const [projectDocs, invoiceDocs, meetingDocs, activityDocs] = await Promise.all([
     Project.find(scope).sort({ updatedAt: -1 }).populate("team", "name").lean(),
     Invoice.find({ client: scope.client, status: { $nin: ["Draft", "Cancelled"] } }).sort({ issueDate: -1 }).lean(),
-    Meeting.find({ client: scope.client, date: { $gte: new Date(Date.now() - 2 * 60 * 60 * 1000) } }).sort({ date: 1 }).limit(5).lean(),
+    Meeting.find({ client: scope.client, status: { $ne: "Declined" }, date: { $gte: new Date(Date.now() - 2 * 60 * 60 * 1000) } }).sort({ date: 1 }).limit(5).lean(),
     Activity.find({ client: scope.client, visibleToClient: true }).sort({ createdAt: -1 }).limit(12).lean(),
   ]);
 
@@ -148,6 +149,9 @@ export default async function PortalHome() {
               <ul className="space-y-3">
                 {meetings.map((m) => (
                   <li key={m._id} className="rounded-xl border border-line p-3">
+                    {m.status === "Requested" && (
+                      <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-violet">Requested · waiting for confirmation</div>
+                    )}
                     <div className="text-sm font-semibold text-heading">{m.title}</div>
                     <div className="text-xs text-muted"><LocalTime iso={m.date} /></div>
                     {m.notes && <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{m.notes}</p>}
@@ -160,6 +164,9 @@ export default async function PortalHome() {
                 ))}
               </ul>
             )}
+            <div className="mt-4">
+              <RequestMeetingButton projects={projects.map((p) => ({ _id: p._id, title: p.title }))} />
+            </div>
           </div>
 
           <div className="card p-5">

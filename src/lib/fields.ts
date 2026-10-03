@@ -1,3 +1,5 @@
+import { HttpError } from "./api";
+
 export const CLIENT_FIELDS = ["name", "company", "email", "phone", "website", "address", "source", "status", "notes"];
 
 export const QUERY_FIELDS = [
@@ -51,3 +53,12 @@ export function cleanQuery(data: Record<string, unknown>) {
 }
 
 export const MEETING_FIELDS = ["client", "project", "title", "date", "link", "notes"];
+
+/** Validates a custom follow-up message sent to a client. */
+export function followUpBody(body: Record<string, unknown>) {
+  const title = typeof body.title === "string" ? body.title.trim().slice(0, 120) : "";
+  const message = typeof body.message === "string" ? body.message.trim().slice(0, 2000) : "";
+  if (!title) throw new HttpError("Add a subject");
+  if (!message) throw new HttpError("Write a message");
+  return { title, body: message, email: body.email !== false };
+}

@@ -1,4 +1,5 @@
 import { ADMIN, apiUser } from "@/lib/session";
+import { invoiceIssuedMessage, notifyClient } from "@/lib/client-notify";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Client } from "@/models/Client";
@@ -7,7 +8,7 @@ import { getSettings } from "@/lib/settings";
 import { clientSnapshot, newPublicId, nextInvoiceNumber, normalizeInvoiceBody, recompute } from "@/lib/invoices";
 
 export const POST = handle(async (req: Request) => {
-  await apiUser(ADMIN);
+  const user = await apiUser(ADMIN);
   await dbConnect();
   const body = await req.json();
   if (!body.client || !validId(body.client)) return error("Please select a client");
@@ -37,5 +38,6 @@ export const POST = handle(async (req: Request) => {
     payments,
     ...computed,
   });
+  if (invoice.status !== "Draft") await notifyClient(String(invoice.client), invoiceIssuedMessage(invoice), user);
   return json(invoice, 201);
 });

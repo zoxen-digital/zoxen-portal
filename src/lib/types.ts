@@ -94,6 +94,8 @@ export interface InvoiceT {
   viewCount?: number;
   lastViewedAt?: string;
   confirmedAt?: string;
+  lastReminderAt?: string;
+  reminderCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -261,6 +263,7 @@ export interface MeetingT {
   link?: string;
   notes?: string;
   createdBy?: string;
+  status?: "Scheduled" | "Requested" | "Declined";
 }
 
 export interface NotificationT {

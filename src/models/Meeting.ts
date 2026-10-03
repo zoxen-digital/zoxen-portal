@@ -10,6 +10,8 @@ const MeetingSchema = new Schema(
     // Agenda before, summary / action points after. Visible to the client.
     notes: String,
     createdBy: String,
+    // Requested = asked for by the client from the portal, waiting for the team to confirm.
+    status: { type: String, enum: ["Scheduled", "Requested", "Declined"], default: "Scheduled" },
   },
   { timestamps: true }
 );

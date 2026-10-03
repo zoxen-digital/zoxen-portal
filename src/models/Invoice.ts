@@ -53,6 +53,8 @@ const InvoiceSchema = new Schema(
     viewCount: { type: Number, default: 0 },
     lastViewedAt: Date,
     confirmedAt: Date,
+    lastReminderAt: Date,
+    reminderCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -99,13 +99,14 @@ export function InvoiceActions({ invoice }: { invoice: InvoiceT }) {
         <Pencil className="h-4 w-4" /> Edit
       </Link>
       {isDraft ? (
-        <button onClick={() => patch("Unpaid", "Invoice generated. The client link is now active.")} disabled={!!busy} className="btn btn-primary">
+        <button onClick={() => patch("Unpaid", "Invoice generated and the client was notified.")} disabled={!!busy} className="btn btn-primary">
           {busy === "Unpaid" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Generate & activate link
         </button>
       ) : (
         <>
           {!isCancelled && invoice.totals.balance > 0 && (
             <>
+              <SendReminderButton invoice={invoice} />
               <RecordPaymentButton invoice={invoice} />
               <button onClick={markPaid} disabled={!!busy} className="btn btn-outline">
                 {busy === "paid" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 text-emerald-500" />} Mark as paid
@@ -143,6 +144,63 @@ export function InvoiceActions({ invoice }: { invoice: InvoiceT }) {
       )}
       <DeleteButton url={`/api/invoices/${invoice._id}`} redirectTo="/invoices" confirmText={`Delete invoice ${invoice.invoiceNumber} permanently?`} />
     </div>
+  );
+}
+
+function SendReminderButton({ invoice }: { invoice: InvoiceT }) {
+  const router = useRouter();
+  const { notify } = useDialogs();
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function send(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const res = await api<{ via: string }>(`/api/invoices/${invoice._id}/remind`, "POST", { note });
+      notify(res.via === "portal" ? "Reminder sent to the client's portal, phone and email" : "Reminder emailed to the client");
+      setOpen(false);
+      setNote("");
+      router.refresh();
+    } catch (e) {
+      notify((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="btn btn-outline">
+        <Mail className="h-4 w-4" /> Send reminder
+      </button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Send payment reminder"
+        subtitle={
+          invoice.lastReminderAt
+            ? `Last reminder: ${formatDate(invoice.lastReminderAt)} · ${invoice.reminderCount || 1} sent so far`
+            : `Balance due: ${formatMoney(invoice.totals.balance, invoice.currency)}`
+        }
+      >
+        <form onSubmit={send} className="space-y-4">
+          <p className="text-sm text-muted">
+            The client gets a polite reminder with a link to view and pay this invoice: in their portal, as a phone alert and by email.
+          </p>
+          <Field label="Personal note (optional)">
+            <textarea className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. We start the next phase once this is cleared." />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setOpen(false)} className="btn btn-outline">Cancel</button>
+            <button className="btn btn-primary" disabled={busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send reminder
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }
 

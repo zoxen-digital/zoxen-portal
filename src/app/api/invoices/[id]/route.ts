@@ -1,4 +1,5 @@
 import { ADMIN, apiUser } from "@/lib/session";
+import { invoiceIssuedMessage, notifyClient } from "@/lib/client-notify";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Client } from "@/models/Client";
@@ -10,7 +11,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Full edit from the invoice form. Recorded payments are kept as they are. */
 export const PUT = handle(async (req: Request, { params }: Ctx) => {
-  await apiUser(ADMIN);
+  const user = await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -28,6 +29,7 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
     invoice.clientSnapshot = clientSnapshot(client);
   }
 
+  const wasDraft = invoice.status === "Draft";
   invoice.set(data);
   if (body.status === "Draft") invoice.status = "Draft";
   else if (invoice.status === "Draft") invoice.status = "Unpaid";
@@ -41,12 +43,13 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
     applyTotals(invoice);
   }
   await invoice.save();
+  if (wasDraft && invoice.status !== "Draft") await notifyClient(String(invoice.client), invoiceIssuedMessage(invoice), user);
   return json(invoice);
 });
 
 /** Quick actions: change status, clear all payments (mark unpaid) or refresh client details. */
 export const PATCH = handle(async (req: Request, { params }: Ctx) => {
-  await apiUser(ADMIN);
+  const user = await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -54,6 +57,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
   if (!invoice) return error("Invoice not found", 404);
 
   const { status, refreshClient, clearPayments } = await req.json();
+  const wasDraft = invoice.status === "Draft";
   if (clearPayments) invoice.payments = [];
   if (status) {
     if (!(INVOICE_STATUSES as readonly string[]).includes(status)) return error("Invalid status");
@@ -65,6 +69,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
   }
   applyTotals(invoice);
   await invoice.save();
+  if (wasDraft && invoice.status === "Unpaid") await notifyClient(String(invoice.client), invoiceIssuedMessage(invoice), user);
   return json(invoice);
 });
 

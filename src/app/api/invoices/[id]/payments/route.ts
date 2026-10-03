@@ -1,4 +1,5 @@
 import { ADMIN, apiUser } from "@/lib/session";
+import { notifyClient, paymentReceivedMessage } from "@/lib/client-notify";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { error, handle, json, validId } from "@/lib/api";
@@ -8,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Record a payment. Send { amount, date, method, note } or { full: true } to clear the balance. */
 export const POST = handle(async (req: Request, { params }: Ctx) => {
-  await apiUser(ADMIN);
+  const user = await apiUser(ADMIN);
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
@@ -28,6 +29,7 @@ export const POST = handle(async (req: Request, { params }: Ctx) => {
   if (invoice.status === "Draft" || invoice.status === "Cancelled") invoice.status = "Unpaid";
   applyTotals(invoice);
   await invoice.save();
+  await notifyClient(String(invoice.client), paymentReceivedMessage(invoice, amount), user);
   return json(invoice);
 });
 
