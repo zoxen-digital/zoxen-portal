@@ -25,8 +25,10 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
   const now = Date.now();
   const requests = meetings.filter((m) => m.status === "Requested").reverse();
   const booked = meetings.filter((m) => m.status !== "Requested" && m.status !== "Declined");
-  const upcoming = booked.filter((m) => new Date(m.date).getTime() >= now).reverse();
-  const past = booked.filter((m) => new Date(m.date).getTime() < now);
+  // A meeting stays "upcoming" until it has ended.
+  const ends = (m: MeetingT) => new Date(m.date).getTime() + (m.minutes || 30) * 60_000;
+  const upcoming = booked.filter((m) => ends(m) >= now).reverse();
+  const past = booked.filter((m) => ends(m) < now);
 
   const [confirming, setConfirming] = useState<string | null>(null);
   const [joinLink, setJoinLink] = useState("");
@@ -70,6 +72,22 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
     }
   }
 
+  const [linking, setLinking] = useState<string | null>(null);
+  async function createLink(m: MeetingT) {
+    setLinking(m._id);
+    try {
+      // An empty PUT on a scheduled meeting without a link asks the server to create one.
+      const res = await api<{ linkSource: string; meeting: MeetingT }>(`/api/meetings/${m._id}`, "PUT", {});
+      if (res.meeting.link) notify(`Link created${LINK_NOTE[res.linkSource] || ""}`);
+      else notify("No link: connect Google Calendar or add a fixed meeting link in Settings first.", "error");
+      router.refresh();
+    } catch (e) {
+      notify((e as Error).message, "error");
+    } finally {
+      setLinking(null);
+    }
+  }
+
   const row = (m: MeetingT) => (
     <li key={m._id} className="group flex items-start gap-3 py-2.5">
       <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
@@ -80,10 +98,14 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
         </div>
         {m.notes && <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{m.notes}</p>}
       </div>
-      {m.link && (
+      {m.link ? (
         <a href={m.link} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm px-2" title="Join link">
           <Video className="h-4 w-4" />
         </a>
+      ) : (
+        <button onClick={() => createLink(m)} disabled={linking === m._id} className="btn btn-outline btn-sm" title="Create a Meet link for this meeting">
+          {linking === m._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />} Create link
+        </button>
       )}
       <button onClick={() => remove(m)} className="btn btn-ghost btn-sm px-2 opacity-0 hover:text-red-500 group-hover:opacity-100" aria-label="Delete">
         <Trash2 className="h-4 w-4" />

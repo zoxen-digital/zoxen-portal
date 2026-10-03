@@ -20,9 +20,10 @@ export const POST = handle(async (req: Request) => {
   if (!data.project || !validId(String(data.project))) delete data.project;
   const meeting = await Meeting.create({ ...data, createdBy: user.name, status: "Scheduled" });
   // Empty link = create a Google Meet (or use the fixed link from Settings).
-  const linkSource = date.getTime() > Date.now() ? await ensureMeetingLink(meeting) : "existing";
+  // Meetings starting now (or up to 2 hours ago) still need a link.
+  const linkSource = date.getTime() > Date.now() - 2 * 60 * 60 * 1000 ? await ensureMeetingLink(meeting) : "existing";
 
-  if (date.getTime() > Date.now()) {
+  if (date.getTime() > Date.now() - 2 * 60 * 60 * 1000) {
     await notify(await clientUserIds(String(data.client)), {
       title: `Meeting scheduled: ${meeting.title}`,
       // The server's time zone is not the client's, so the exact time is shown in the portal instead.
