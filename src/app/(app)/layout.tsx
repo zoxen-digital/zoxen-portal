@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await pageUser(STAFF);
   let newSubmissions = 0;
-  if (user.role === "super_admin") {
+  {
     try {
       await dbConnect();
       newSubmissions = await Onboarding.countDocuments({ status: "New" });

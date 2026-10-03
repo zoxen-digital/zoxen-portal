@@ -2,7 +2,7 @@ export const QUERY_STATUSES = ["Pending", "In Progress", "Completed", "Closed"] 
 export const QUERY_PRIORITIES = ["Low", "Medium", "High"] as const;
 export const CLIENT_STATUSES = ["Active", "Onboarding", "Inactive"] as const;
 export const INVOICE_STATUSES = ["Draft", "Unpaid", "Partially Paid", "Paid", "Cancelled"] as const;
-export const ONBOARDING_STATUSES = ["New", "Reviewed", "Converted", "Rejected"] as const;
+export const ONBOARDING_STATUSES = ["New", "Reviewed", "Approved", "Rejected"] as const;
 
 export const PROJECT_STAGES = [
   "Onboarding",

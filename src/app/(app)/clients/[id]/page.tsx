@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, FilePen, FileSignature, FileText, FolderKanban, Globe, KeyRound, LifeBuoy, Mail, MapPin, Phone, Plus, RefreshCcw, Repeat, Rocket, Star } from "lucide-react";
+import { ArrowLeft, BarChart3, ClipboardList, FilePen, FileSignature, FileText, FolderKanban, Globe, KeyRound, LifeBuoy, Mail, MapPin, Phone, Plus, RefreshCcw, Repeat, Rocket, Star } from "lucide-react";
 import { isValidObjectId } from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { getSettings, teamNames } from "@/lib/settings";
@@ -19,6 +19,9 @@ import { Contract } from "@/models/Contract";
 import { Ticket } from "@/models/Ticket";
 import { RecurringPlan } from "@/models/RecurringPlan";
 import { StartPackageButton } from "@/components/PackageForms";
+import { OnboardingFormRow, SendOnboardingButton } from "@/components/OnboardingClientCard";
+import { OnboardingDetails } from "@/components/OnboardingDetails";
+import { Onboarding } from "@/models/Onboarding";
 import { Avatar, Badge, CardHeader, EmptyState, InfoRow, StatCard } from "@/components/ui";
 import { EditClientButton } from "@/components/ClientForm";
 import { EditQueryButton, NewQueryButton } from "@/components/QueryForm";
@@ -30,7 +33,7 @@ import { FollowUpButton } from "@/components/FollowUpButton";
 import { ActivityFeed } from "@/components/ProjectBits";
 import { OPEN_STAGES, QUERY_STATUSES } from "@/lib/constants";
 import { formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
-import type { ActivityT, ClientT, ContractT, InvoiceT, MeetingT, PackageT, ProjectT, QueryT, QuoteT, RecurringPlanT, TicketT, UserT } from "@/lib/types";
+import type { ActivityT, ClientT, OnboardingT, ContractT, InvoiceT, MeetingT, PackageT, ProjectT, QueryT, QuoteT, RecurringPlanT, TicketT, UserT } from "@/lib/types";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await pageUser(ADMIN);
@@ -38,7 +41,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (!isValidObjectId(id)) notFound();
   await dbConnect();
 
-  const [doc, queryDocs, invoiceDocs, settings, projectDocs, userDocs, meetingDocs, activityDocs, teamDocs, packageDocs, quoteDocs, contractDocs, ticketDocs, planDocs] = await Promise.all([
+  const [doc, queryDocs, invoiceDocs, settings, projectDocs, userDocs, meetingDocs, activityDocs, teamDocs, packageDocs, quoteDocs, contractDocs, ticketDocs, planDocs, onboardingDocs] = await Promise.all([
     Client.findById(id).lean(),
     Query.find({ client: id }).sort({ createdAt: -1 }).lean(),
     Invoice.find({ client: id }).sort({ createdAt: -1 }).lean(),
@@ -53,6 +56,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     Contract.find({ client: id }).sort({ createdAt: -1 }).limit(20).lean(),
     Ticket.find({ client: id }).sort({ updatedAt: -1 }).limit(20).lean(),
     RecurringPlan.find({ client: id }).sort({ nextRunAt: 1 }).lean(),
+    Onboarding.find({ client: id }).sort({ createdAt: -1 }).lean(),
   ]);
   if (!doc) notFound();
 
@@ -81,6 +85,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const contracts = serialize<ContractT[]>(contractDocs);
   const tickets = serialize<TicketT[]>(ticketDocs);
   const plans = serialize<RecurringPlanT[]>(planDocs);
+  const forms = serialize<OnboardingT[]>(onboardingDocs);
   const queryTeam = await teamNames();
 
   return (
@@ -105,6 +110,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <div className="flex flex-wrap gap-2">
           <EditClientButton client={client} />
           <FollowUpButton url={`/api/clients/${client._id}/notify`} clientName={client.company || client.name} />
+          <SendOnboardingButton clientId={client._id} clientName={client.company || client.name} />
           <StartPackageButton clientId={client._id} packages={packages} />
           <Link href={`/quotes/new?client=${client._id}`} className="btn btn-outline">
             <FilePen className="h-4 w-4" /> New Quote
@@ -231,6 +237,34 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             )}
           </div>
         </div>
+      </div>
+
+      <div className="card p-5">
+        <h2 className="mb-1 flex items-center gap-2 font-bold text-heading">
+          <ClipboardList className="h-4 w-4 text-brand dark:text-[#8f9bff]" /> Onboarding forms
+          <span className="text-sm font-medium text-muted">({forms.length})</span>
+        </h2>
+        {forms.length === 0 ? (
+          <p className="text-sm text-muted">No onboarding form yet. Use <b>Send onboarding form</b> to share this client&apos;s personal link.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {forms.map((o) => (
+              <OnboardingFormRow
+                key={o._id}
+                title={`${o.company || o.name}${o.budget ? ` · ${o.budget}` : ""}`}
+                status={o.status === "Converted" ? "Approved" : o.status === "Approving" ? "Reviewed" : o.status}
+                date={o.createdAt}
+              >
+                {!["Approved", "Converted"].includes(o.status) && (
+                  <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                    Waiting for approval. Approve it on <Link href={`/submissions?open=${o._id}`} className="font-semibold underline">Onboarding Submissions</Link>.
+                  </p>
+                )}
+                <OnboardingDetails item={o} />
+              </OnboardingFormRow>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

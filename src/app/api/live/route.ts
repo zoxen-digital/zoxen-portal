@@ -38,7 +38,11 @@ export const GET = handle(async () => {
   if (user.role === "super_admin") {
     for (const m of [Invoice, Meeting, Query, Client, Onboarding, Activity, Ticket, Quote, Contract, RecurringPlan]) parts.push(latest(m as Model<unknown>));
   } else if (user.role === "team_admin") {
-    parts.push(latest(Query as Model<unknown>, { assignedTo: user.name }), latest(Ticket as Model<unknown>, await ticketScope(user)));
+    parts.push(
+      latest(Query as Model<unknown>, { assignedTo: user.name }),
+      latest(Ticket as Model<unknown>, await ticketScope(user)),
+      latest(Onboarding as Model<unknown>)
+    );
   } else {
     const client = { client: scope.client };
     parts.push(

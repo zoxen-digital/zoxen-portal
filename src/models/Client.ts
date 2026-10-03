@@ -11,6 +11,8 @@ const ClientSchema = new Schema(
     source: { type: String, default: "Manual" },
     status: { type: String, default: "Active" },
     notes: { type: String },
+    // Secret part of this client personal onboarding form link (/onboarding/<token>).
+    onboardingToken: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );

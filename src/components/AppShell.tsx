@@ -45,7 +45,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] =
   { href: "/tickets", label: "Support Tickets", icon: LifeBuoy, roles: ["super_admin", "team_admin"] },
   { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
   { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
-  { href: "/onboarding", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin"] },
+  { href: "/submissions", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin", "team_admin"] },
   { href: "/quotes", label: "Quotes", icon: FilePen, roles: ["super_admin"] },
   { href: "/contracts", label: "Contracts", icon: FileSignature, roles: ["super_admin"] },
   { href: "/invoices", label: "Invoices", icon: FileText, roles: ["super_admin"] },
@@ -131,7 +131,7 @@ export function AppShell({
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
                 {!mini && <span className="flex-1 truncate">{item.label}</span>}
-                {!mini && item.href === "/onboarding" && newSubmissions > 0 && (
+                {!mini && item.href === "/submissions" && newSubmissions > 0 && (
                   <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", active ? "bg-white/20" : "bg-violet/10 text-violet")}>
                     {newSubmissions}
                   </span>

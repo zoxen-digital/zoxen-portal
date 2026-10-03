@@ -9,6 +9,8 @@ import { Meeting } from "@/models/Meeting";
 import { Activity } from "@/models/Activity";
 import { Quote } from "@/models/Quote";
 import { Contract } from "@/models/Contract";
+import { Onboarding } from "@/models/Onboarding";
+import { ClipboardList } from "lucide-react";
 import { Badge, EmptyState } from "@/components/ui";
 import { ProgressBar } from "@/components/ProjectForm";
 import { ActivityFeed } from "@/components/ProjectBits";
@@ -24,14 +26,17 @@ export default async function PortalHome() {
   const user = await pageUser(["client"]);
   await dbConnect();
   const scope = projectScope(user);
-  const [projectDocs, invoiceDocs, meetingDocs, activityDocs, openQuotes, openContracts] = await Promise.all([
+  const [projectDocs, invoiceDocs, meetingDocs, activityDocs, openQuotes, openContracts, formCount] = await Promise.all([
     Project.find(scope).sort({ updatedAt: -1 }).populate("team", "name").lean(),
     Invoice.find({ client: scope.client, status: { $nin: ["Draft", "Cancelled"] } }).sort({ issueDate: -1 }).lean(),
     Meeting.find({ client: scope.client, status: { $ne: "Declined" }, date: { $gte: new Date(Date.now() - 2 * 60 * 60 * 1000) } }).sort({ date: 1 }).limit(5).lean(),
     Activity.find({ client: scope.client, visibleToClient: true }).sort({ createdAt: -1 }).limit(12).lean(),
     Quote.find({ client: scope.client, status: "Sent" }).select("number title publicId validUntil").lean<{ _id: unknown; number: string; title: string; publicId: string; validUntil?: Date }[]>(),
     Contract.find({ client: scope.client, status: "Sent" }).select("number title publicId").lean<{ _id: unknown; number: string; title: string; publicId: string }[]>(),
+    Onboarding.countDocuments({ client: scope.client }),
   ]);
+  // New clients without a project or form yet are asked to fill the onboarding form first.
+  const needsForm = formCount === 0 && projectDocs.length === 0;
   const now = Date.now();
   const quotesToAccept = openQuotes.filter((q) => !q.validUntil || new Date(q.validUntil).getTime() + 86_400_000 > now);
 
@@ -53,8 +58,22 @@ export default async function PortalHome() {
         <p className="mt-1 text-sm text-muted">Here is where everything stands with your projects.</p>
       </div>
 
-      {(toReview.length > 0 || actions.length > 0 || quotesToAccept.length > 0 || openContracts.length > 0) && (
+      {(needsForm || toReview.length > 0 || actions.length > 0 || quotesToAccept.length > 0 || openContracts.length > 0) && (
         <div className="space-y-3">
+          {needsForm && (
+            <Link href="/portal/onboarding" className="flex items-center gap-4 rounded-2xl border border-brand/30 bg-brand/5 p-4 transition hover:bg-brand/10">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/15 text-brand dark:text-[#8f9bff]">
+                <ClipboardList className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-heading">Complete your onboarding form</div>
+                <div className="text-sm text-muted">Share your business details, goals and design preferences so we can start. About 5 minutes.</div>
+              </div>
+              <span className="btn btn-primary hidden sm:inline-flex">
+                Start <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          )}
           {quotesToAccept.map((q) => (
             <Link key={String(q._id)} href={`/quote/${q.publicId}`} className="flex items-center gap-4 rounded-2xl border border-brand/30 bg-brand/5 p-4 transition hover:bg-brand/10">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/15 text-brand dark:text-[#8f9bff]">

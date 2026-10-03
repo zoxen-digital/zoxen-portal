@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, ChevronDown, FileSignature, FileText, KeyRound, LayoutGrid, LifeBuoy, LogOut } from "lucide-react";
+import { BarChart3, ChevronDown, ClipboardList, FileSignature, FileText, KeyRound, LayoutGrid, LifeBuoy, LogOut } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/portal", label: "Overview", icon: LayoutGrid, exact: true },
+  { href: "/portal/onboarding", label: "Onboarding", icon: ClipboardList },
   { href: "/portal/tickets", label: "Support", icon: LifeBuoy },
   { href: "/portal/documents", label: "Proposals", icon: FileSignature },
   { href: "/portal/invoices", label: "Invoices", icon: FileText },

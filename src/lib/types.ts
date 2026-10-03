@@ -112,7 +112,11 @@ export interface OnboardingT {
   message?: string;
   data?: Record<string, unknown>;
   status: string;
-  client?: string | null;
+  client?: ClientT | string | null;
+  source?: string;
+  project?: string | null;
+  approvedAt?: string;
+  approvedBy?: string;
   createdAt: string;
 }
 

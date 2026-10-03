@@ -12,7 +12,12 @@ const OnboardingSchema = new Schema(
     message: String,
     data: { type: Schema.Types.Mixed },
     status: { type: String, default: "New", index: true },
-    client: { type: Schema.Types.ObjectId, ref: "Client" },
+    client: { type: Schema.Types.ObjectId, ref: "Client", index: true },
+    // "portal" = filled on our own onboarding form; "external" = sent by another website.
+    source: { type: String, default: "external" },
+    project: { type: Schema.Types.ObjectId, ref: "Project" },
+    approvedAt: Date,
+    approvedBy: String,
   },
   { timestamps: true }
 );
