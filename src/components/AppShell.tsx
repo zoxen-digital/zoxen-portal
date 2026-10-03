@@ -28,6 +28,7 @@ import { Logo, LogoMark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar } from "./ui";
 import { NotificationBell } from "./NotificationBell";
+import { LiveUpdates } from "./LiveUpdates";
 import { cn } from "@/lib/utils";
 import type { RoleT } from "@/lib/types";
 
@@ -156,6 +157,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
+      <LiveUpdates />
       {/* Desktop sidebar */}
       <aside
         className={cn(

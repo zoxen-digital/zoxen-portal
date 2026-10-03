@@ -7,6 +7,7 @@ import { ChevronDown, FileText, KeyRound, LayoutGrid, LogOut } from "lucide-reac
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
+import { LiveUpdates } from "./LiveUpdates";
 import { Avatar } from "./ui";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ export function PortalShell({ children, userName, company }: { children: React.R
 
   return (
     <div className="min-h-screen">
+      <LiveUpdates />
       <header className="sticky top-0 z-20 border-b border-line bg-bg/80 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-4 px-4 sm:px-6">
           <Link href="/portal" className="shrink-0">

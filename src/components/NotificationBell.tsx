@@ -6,6 +6,7 @@ import { Bell, BellRing, CheckCheck, Loader2 } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 import { useDialogs } from "./Dialogs";
+import { LIVE_EVENT } from "./LiveUpdates";
 import type { NotificationT } from "@/lib/types";
 
 const POLL_MS = 60_000;
@@ -44,11 +45,13 @@ export function NotificationBell() {
     const t = setInterval(load, POLL_MS);
     const onFocus = () => document.visibilityState === "visible" && load();
     document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener(LIVE_EVENT, load);
     const onClick = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
     document.addEventListener("mousedown", onClick);
     return () => {
       clearInterval(t);
       document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener(LIVE_EVENT, load);
       document.removeEventListener("mousedown", onClick);
     };
   }, [load]);

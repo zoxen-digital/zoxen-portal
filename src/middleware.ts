@@ -14,7 +14,7 @@ const PUBLIC_PREFIXES = [
 ];
 
 // Paths every signed-in user may open, whatever the role.
-const SHARED = ["/api/auth/", "/api/notifications", "/api/push", "/api/account"];
+const SHARED = ["/api/auth/", "/api/notifications", "/api/push", "/api/account", "/api/live"];
 
 // Super admin may open everything except the client portal.
 const ALLOWED: Record<Exclude<Role, "super_admin">, string[]> = {
