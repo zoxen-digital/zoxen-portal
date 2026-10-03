@@ -12,6 +12,9 @@ const MeetingSchema = new Schema(
     createdBy: String,
     // Requested = asked for by the client from the portal, waiting for the team to confirm.
     status: { type: String, enum: ["Scheduled", "Requested", "Declined"], default: "Scheduled" },
+    minutes: { type: Number, default: 30 },
+    // Set when the Meet link was created through Google Calendar, so edits and cancels stay in sync.
+    googleEventId: String,
   },
   { timestamps: true }
 );

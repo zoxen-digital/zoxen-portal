@@ -19,6 +19,7 @@ const FIELDS = [
   "defaultTerms",
   "paymentDetails",
   "teamMembers",
+  "meetingLink",
 ];
 
 export const GET = handle(async () => {

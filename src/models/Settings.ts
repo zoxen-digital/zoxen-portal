@@ -20,6 +20,8 @@ const SettingsSchema = new Schema(
     },
     paymentDetails: { bankName: String, accountName: String, accountNumber: String, iban: String, other: String },
     teamMembers: { type: [String], default: [] },
+    // Backup meeting room (e.g. a permanent Google Meet link) used when Google Calendar is not connected.
+    meetingLink: String,
   },
   { timestamps: true }
 );

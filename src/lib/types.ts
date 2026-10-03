@@ -131,6 +131,7 @@ export interface SettingsT {
   defaultTerms?: string;
   paymentDetails: PaymentDetails;
   teamMembers: string[];
+  meetingLink?: string;
 }
 
 export type RoleT = "super_admin" | "team_admin" | "client";
@@ -264,6 +265,8 @@ export interface MeetingT {
   notes?: string;
   createdBy?: string;
   status?: "Scheduled" | "Requested" | "Declined";
+  minutes?: number;
+  googleEventId?: string;
 }
 
 export interface NotificationT {

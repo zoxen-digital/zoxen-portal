@@ -9,12 +9,18 @@ import { LocalTime } from "./LocalTime";
 import { useDialogs } from "./Dialogs";
 import type { MeetingT } from "@/lib/types";
 
+const LINK_NOTE: Record<string, string> = {
+  google: " with a new Google Meet link (calendar invite sent)",
+  fixed: " with your fixed meeting link",
+  none: " (no link: connect Google or add a fixed link in Settings)",
+};
+
 export function MeetingsPanel({ clientId, meetings, projects }: { clientId: string; meetings: MeetingT[]; projects: { _id: string; title: string }[] }) {
   const router = useRouter();
   const { notify, confirm } = useDialogs();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const empty = { title: "", date: "", link: "", notes: "", project: "" };
+  const empty = { title: "", date: "", link: "", notes: "", project: "", minutes: "30" };
   const [f, setF] = useState(empty);
   const now = Date.now();
   const requests = meetings.filter((m) => m.status === "Requested").reverse();
@@ -27,10 +33,10 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
 
   async function respond(m: MeetingT, status: "Scheduled" | "Declined") {
     try {
-      await api(`/api/meetings/${m._id}`, "PUT", status === "Scheduled" ? { status, link: joinLink } : { status });
+      const res = await api<{ linkSource: string }>(`/api/meetings/${m._id}`, "PUT", status === "Scheduled" ? { status, link: joinLink } : { status });
       setConfirming(null);
       setJoinLink("");
-      notify(status === "Scheduled" ? "Meeting confirmed. The client was notified." : "Request declined. The client was notified.");
+      notify(status === "Scheduled" ? `Meeting confirmed${LINK_NOTE[res.linkSource] || ""}. The client was notified.` : "Request declined. The client was notified.");
       router.refresh();
     } catch (e) {
       notify((e as Error).message, "error");
@@ -42,10 +48,10 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
     setBusy(true);
     try {
       // datetime-local has no zone: convert in the browser so the time means what the admin typed.
-      await api("/api/meetings", "POST", { ...f, client: clientId, date: new Date(f.date).toISOString() });
+      const res = await api<{ linkSource: string }>("/api/meetings", "POST", { ...f, client: clientId, date: new Date(f.date).toISOString() });
       setF(empty);
       setOpen(false);
-      notify("Meeting added. The client was notified.");
+      notify(`Meeting added${LINK_NOTE[res.linkSource] || ""}. The client was notified.`);
       router.refresh();
     } catch (e) {
       notify((e as Error).message, "error");
@@ -102,7 +108,12 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
           <form onSubmit={add} className="mb-4 grid gap-3 rounded-xl border border-line bg-surface-2/50 p-4 sm:grid-cols-2">
             <input className="input sm:col-span-2" required value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="e.g. Design review call" />
             <input className="input" type="datetime-local" required value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
-            <input className="input" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} placeholder="Google Meet / Zoom link" />
+            <input className="input" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} placeholder="Leave empty for an automatic Meet link" />
+            <select className="input" value={f.minutes} onChange={(e) => setF({ ...f, minutes: e.target.value })} aria-label="Duration">
+              {["15", "30", "45", "60", "90"].map((m) => (
+                <option key={m} value={m}>{m} minutes</option>
+              ))}
+            </select>
             {projects.length > 0 && (
               <select className="input sm:col-span-2" value={f.project} onChange={(e) => setF({ ...f, project: e.target.value })}>
                 <option value="">Not linked to a project</option>
@@ -142,7 +153,7 @@ export function MeetingsPanel({ clientId, meetings, projects }: { clientId: stri
                 </div>
                 {confirming === m._id && (
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                    <input className="input" autoFocus value={joinLink} onChange={(e) => setJoinLink(e.target.value)} placeholder="Google Meet / Zoom link (optional)" />
+                    <input className="input" autoFocus value={joinLink} onChange={(e) => setJoinLink(e.target.value)} placeholder="Leave empty for an automatic Meet link" />
                     <button onClick={() => setConfirming(null)} className="btn btn-outline">Back</button>
                     <button onClick={() => respond(m, "Scheduled")} className="btn btn-primary">Confirm meeting</button>
                   </div>

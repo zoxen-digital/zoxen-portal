@@ -122,6 +122,21 @@ export function SettingsForm({ initial }: { initial: SettingsT }) {
       </section>
 
       <section className="card p-5">
+        <h2 className="mb-1 font-bold text-heading">Meetings</h2>
+        <p className="mb-4 text-xs text-muted">
+          Backup link used when Google Calendar is not connected (for example your permanent Google Meet room). Leave the link empty on a meeting to fill it automatically.
+        </p>
+        <Field label="Fixed meeting link">
+          <input
+            className="input"
+            value={s.meetingLink || ""}
+            onChange={(e) => setS((x) => ({ ...x, meetingLink: e.target.value }))}
+            placeholder="https://meet.google.com/abc-defg-hij"
+          />
+        </Field>
+      </section>
+
+      <section className="card p-5">
         <h2 className="mb-1 font-bold text-heading">Team members</h2>
         <p className="mb-4 text-xs text-muted">Used for &quot;Assigned to&quot; on queries and the workload report.</p>
         <div className="flex gap-2">

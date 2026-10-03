@@ -52,7 +52,7 @@ export function cleanQuery(data: Record<string, unknown>) {
   return data;
 }
 
-export const MEETING_FIELDS = ["client", "project", "title", "date", "link", "notes"];
+export const MEETING_FIELDS = ["client", "project", "title", "date", "link", "notes", "minutes"];
 
 /** Validates a custom follow-up message sent to a client. */
 export function followUpBody(body: Record<string, unknown>) {

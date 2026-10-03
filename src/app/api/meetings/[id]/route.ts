@@ -4,6 +4,7 @@ import { error, handle, json, pick, validId } from "@/lib/api";
 import { MEETING_FIELDS } from "@/lib/fields";
 import { ADMIN, apiUser } from "@/lib/session";
 import { notifyClient } from "@/lib/client-notify";
+import { cancelMeeting, ensureMeetingLink, syncMeetingEvent } from "@/lib/meetings";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -23,12 +24,23 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
     if (isNaN(d.getTime())) return error("Choose a date and time");
     data.date = d;
   }
+  if ("minutes" in data) data.minutes = Math.min(480, Math.max(10, Number(data.minutes) || 30));
   if ("project" in data && !validId(String(data.project))) data.project = null;
   if ("status" in data && !["Scheduled", "Requested", "Declined"].includes(String(data.status))) return error("Invalid status");
 
   const before = meeting.status;
+  const timeChanged = ("date" in data && +new Date(data.date as Date) !== +meeting.date) || ("minutes" in data && data.minutes !== meeting.minutes) || ("title" in data && data.title !== meeting.title);
   meeting.set(data);
   await meeting.save();
+
+  let linkSource = "existing";
+  if (meeting.status === "Scheduled") {
+    linkSource = await ensureMeetingLink(meeting);
+    if (timeChanged && linkSource === "existing") await syncMeetingEvent(meeting);
+  } else if (meeting.status === "Declined") {
+    await cancelMeeting(meeting);
+    await meeting.save();
+  }
 
   if (before === "Requested" && meeting.status === "Scheduled") {
     await notifyClient(
@@ -55,7 +67,7 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
       user
     );
   }
-  return json(meeting);
+  return json({ meeting, linkSource });
 });
 
 export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
@@ -63,6 +75,10 @@ export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
-  await Meeting.findByIdAndDelete(id);
+  const meeting = await Meeting.findById(id);
+  if (meeting) {
+    await cancelMeeting(meeting);
+    await meeting.deleteOne();
+  }
   return json({ ok: true });
 });
