@@ -18,6 +18,8 @@ const OnboardingSchema = new Schema(
     project: { type: Schema.Types.ObjectId, ref: "Project" },
     approvedAt: Date,
     approvedBy: String,
+    // Client whose referral link brought this lead.
+    referredBy: { type: Schema.Types.ObjectId, ref: "Client" },
   },
   { timestamps: true }
 );

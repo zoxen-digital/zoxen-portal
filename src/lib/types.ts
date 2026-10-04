@@ -117,6 +117,7 @@ export interface OnboardingT {
   project?: string | null;
   approvedAt?: string;
   approvedBy?: string;
+  referredBy?: ClientT | string | null;
   createdAt: string;
 }
 
@@ -137,6 +138,7 @@ export interface SettingsT {
   teamMembers: string[];
   meetingLink?: string;
   contractTemplate?: string;
+  referralReward?: string;
 }
 
 export type RoleT = "super_admin" | "team_admin" | "client";
@@ -404,4 +406,33 @@ export interface RecurringPlanT {
   lastRunAt?: string;
   lastInvoice?: string | null;
   invoicesCreated: number;
+}
+
+export interface ReferralT {
+  _id: string;
+  referrer: ClientT | string | null;
+  onboarding: string;
+  leadName?: string;
+  leadCompany?: string;
+  leadEmail?: string;
+  status: "Submitted" | "Converted" | "Rewarded" | "Not converted";
+  newClient?: ClientT | string | null;
+  project?: string | null;
+  convertedAt?: string;
+  rewardNote?: string;
+  rewardedAt?: string;
+  createdAt: string;
+}
+
+export interface ReviewT {
+  _id: string;
+  client: ClientT | string | null;
+  name: string;
+  company?: string;
+  rating: number;
+  text: string;
+  status: "Pending" | "Approved" | "Rejected";
+  approvedAt?: string;
+  featured?: boolean;
+  createdAt: string;
 }

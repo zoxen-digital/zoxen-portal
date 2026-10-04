@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { clientForToken, issueUploadTicket } from "@/lib/onboarding";
 import { OnboardingForm } from "@/components/OnboardingForm";
+import { approvedReviews } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +19,14 @@ export default async function ClientOnboardingPage({ params }: { params: Promise
   await dbConnect();
   const client = await clientForToken(token);
   if (!client) notFound();
-  const s = await getSettings();
+  const [s, reviews] = await Promise.all([getSettings(), approvedReviews(6)]);
   return (
     <OnboardingForm
       ticket={issueUploadTicket()}
       token={token}
       companyName={s.companyName}
       contactEmail={s.email}
+      reviews={reviews}
       prefill={{
         contactPerson: client.name || "",
         email: client.email || "",

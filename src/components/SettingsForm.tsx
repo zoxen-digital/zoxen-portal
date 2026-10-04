@@ -137,6 +137,19 @@ export function SettingsForm({ initial }: { initial: SettingsT }) {
       </section>
 
       <section className="card p-5">
+        <h2 className="mb-1 font-bold text-heading">Referral reward</h2>
+        <p className="mb-4 text-xs text-muted">Shown to clients on their Refer &amp; Earn page and in the notification when a referral starts a project.</p>
+        <Field label="Reward text">
+          <input
+            className="input"
+            value={s.referralReward || ""}
+            onChange={(e) => setS((x) => ({ ...x, referralReward: e.target.value }))}
+            placeholder="10% off your next invoice for every friend who starts a project with us."
+          />
+        </Field>
+      </section>
+
+      <section className="card p-5">
         <h2 className="mb-1 font-bold text-heading">Contract template</h2>
         <p className="mb-4 text-xs text-muted">
           Starting text for new contracts. Leave empty to use the built-in agreement. Placeholders: {"{{date}} {{company_name}} {{client_name}} {{client_company}} {{project}} {{total}} {{payment_terms}}"}

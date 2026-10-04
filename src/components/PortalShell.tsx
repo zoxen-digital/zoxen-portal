@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, ChevronDown, ClipboardList, FileSignature, FileText, KeyRound, LayoutGrid, LifeBuoy, LogOut } from "lucide-react";
+import { BarChart3, ChevronDown, ClipboardList, Gift, MessageSquareQuote, FileSignature, FileText, KeyRound, LayoutGrid, LifeBuoy, LogOut } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
@@ -18,6 +18,8 @@ const NAV = [
   { href: "/portal/documents", label: "Proposals", icon: FileSignature },
   { href: "/portal/invoices", label: "Invoices", icon: FileText },
   { href: "/portal/reports", label: "Reports", icon: BarChart3 },
+  { href: "/portal/reviews", label: "Reviews", icon: MessageSquareQuote },
+  { href: "/portal/referrals", label: "Refer & Earn", icon: Gift },
 ];
 
 export function PortalShell({ children, userName, company }: { children: React.ReactNode; userName: string; company: string }) {
@@ -42,11 +44,11 @@ export function PortalShell({ children, userName, company }: { children: React.R
     <div className="min-h-screen">
       <LiveUpdates />
       <header className="sticky top-0 z-20 border-b border-line bg-bg/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-4 px-4 sm:px-6">
           <Link href="/portal" className="shrink-0">
             <Logo />
           </Link>
-          <nav className="ml-2 hidden gap-1 lg:flex">
+          <nav className="ml-2 hidden min-w-0 gap-0.5 2xl:flex">
             {NAV.map((n) => {
               const active = n.exact ? pathname === n.href || pathname.startsWith("/portal/projects") : pathname.startsWith(n.href);
               return (
@@ -54,7 +56,7 @@ export function PortalShell({ children, userName, company }: { children: React.R
                   key={n.href}
                   href={n.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition",
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium transition",
                     active ? "bg-brand-gradient text-white shadow" : "text-muted hover:bg-surface-2 hover:text-fg"
                   )}
                 >
@@ -88,7 +90,7 @@ export function PortalShell({ children, userName, company }: { children: React.R
             </div>
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto border-t border-line px-4 py-2 lg:hidden">
+        <nav className="flex gap-1 overflow-x-auto border-t border-line px-4 py-2 2xl:hidden">
           {NAV.map((n) => {
             const active = n.exact ? pathname === n.href || pathname.startsWith("/portal/projects") : pathname.startsWith(n.href);
             return (

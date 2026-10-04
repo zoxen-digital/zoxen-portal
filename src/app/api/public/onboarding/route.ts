@@ -1,9 +1,11 @@
 import { dbConnect } from "@/lib/db";
 import { Onboarding } from "@/models/Onboarding";
 import { User } from "@/models/User";
+import { Client } from "@/models/Client";
 import { error, handle, json } from "@/lib/api";
 import { cleanAnswers, clientForToken, submissionFields } from "@/lib/onboarding";
 import { notify } from "@/lib/notify";
+import { recordReferral } from "@/lib/referrals";
 
 /**
  * The public onboarding form posts here (no login).
@@ -19,6 +21,10 @@ export const POST = handle(async (req: Request) => {
   await dbConnect();
   const client = await clientForToken(body.token);
   const sub = await Onboarding.create({ ...submissionFields(answers), client: client?._id, status: "New" });
+  // The form is in; the half-filled draft is no longer needed.
+  if (client) await Client.updateOne({ _id: client._id }, { $unset: { onboardingDraft: 1 } });
+  // Came through a client referral link?
+  if (body.ref) await recordReferral(sub, body.ref);
 
   const staff = await User.find({ role: { $in: ["super_admin", "team_admin"] }, status: "active" }).select("_id").lean();
   await notify(

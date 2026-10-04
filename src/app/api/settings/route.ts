@@ -21,6 +21,7 @@ const FIELDS = [
   "teamMembers",
   "meetingLink",
   "contractTemplate",
+  "referralReward",
 ];
 
 export const GET = handle(async () => {

@@ -24,7 +24,7 @@ export default async function SubmissionsPage({ searchParams }: { searchParams: 
   // "Converted" is the old name of Approved.
   const filter = sp.status === "Approved" ? { status: { $in: ["Approved", "Converted"] } } : sp.status ? { status: sp.status } : {};
   const [docs, statusAgg, clientDocs] = await Promise.all([
-    Onboarding.find(filter).sort({ createdAt: -1 }).limit(500).populate("client", "name company").lean(),
+    Onboarding.find(filter).sort({ createdAt: -1 }).limit(500).populate("client", "name company").populate("referredBy", "name company").lean(),
     Onboarding.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }]),
     Client.find().sort({ name: 1 }).select("name company email").lean(),
   ]);
@@ -92,6 +92,9 @@ export default async function SubmissionsPage({ searchParams }: { searchParams: 
                       <td>
                         <div className="font-semibold text-heading">{s.company || s.name}</div>
                         <div className="text-xs text-muted">{s.source === "portal" ? "Onboarding form" : "External website"}</div>
+                        {s.referredBy && typeof s.referredBy === "object" && (
+                          <div className="mt-0.5 text-xs font-semibold text-violet">Referred by {s.referredBy.company || s.referredBy.name}</div>
+                        )}
                       </td>
                       <td>
                         <div>{s.name}</div>

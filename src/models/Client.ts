@@ -13,6 +13,10 @@ const ClientSchema = new Schema(
     notes: { type: String },
     // Secret part of this client personal onboarding form link (/onboarding/<token>).
     onboardingToken: { type: String, unique: true, sparse: true },
+    // Half-filled onboarding form from their personal link, so they can continue on any device.
+    onboardingDraft: { data: Schema.Types.Mixed, savedAt: Date },
+    // Code in this client referral link (/onboarding?ref=<code>).
+    referralCode: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );

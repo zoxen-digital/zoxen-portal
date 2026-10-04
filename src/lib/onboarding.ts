@@ -7,6 +7,7 @@ import { OB_ADD_ONS, OB_PACKAGES, OB_PAGE_OPTIONS, OB_TEXT_FIELDS, packagePrice,
 import type { CurrentUser } from "./session";
 import { Client } from "@/models/Client";
 import { Project } from "@/models/Project";
+import { referralConverted } from "./referrals";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -174,5 +175,6 @@ export async function approveSubmission(
     link: `/portal/projects/${project._id}`,
     email: { button: "Open portal" },
   });
+  await referralConverted(sub, clientId, String(project._id));
   return { clientId, projectId: String(project._id) };
 }

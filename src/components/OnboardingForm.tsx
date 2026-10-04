@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +19,9 @@ import {
   Sparkles,
   Target,
   Upload,
+  Gift,
+  Quote,
+  Star,
   User,
   X,
   Zap,
@@ -56,6 +59,8 @@ export function OnboardingForm({
   prefill,
   companyName,
   contactEmail,
+  referral,
+  reviews = [],
 }: {
   /** Signed upload ticket from the server (lets visitors upload without logging in). */
   ticket: string;
@@ -64,6 +69,10 @@ export function OnboardingForm({
   prefill?: Partial<Form>;
   companyName: string;
   contactEmail?: string;
+  /** Opened from a client referral link. */
+  referral?: { code: string; by: string };
+  /** Approved client reviews, shown to build trust. */
+  reviews?: { name: string; company?: string; rating: number; text: string }[];
 }) {
   const [step, setStep] = useState(1);
   const [selectedPackage, setSelectedPackage] = useState("Premium");
@@ -86,6 +95,104 @@ export function OnboardingForm({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  // ---------- Draft: keep progress so the client can close the page and continue later ----------
+  const draftKey = `zx-onboarding-draft:${token || "general"}`;
+  const [draftReady, setDraftReady] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const serverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  type Draft = {
+    step: number;
+    selectedPackage: string;
+    addOns: string[];
+    pagesNeeded: string[];
+    form: Partial<Form>;
+    logo: { url: string; name: string } | null;
+    files: { url: string; name: string }[];
+  };
+
+  function applyDraft(d: Partial<Draft>) {
+    if (typeof d.step === "number") setStep(Math.min(6, Math.max(1, d.step)));
+    if (typeof d.selectedPackage === "string") setSelectedPackage(d.selectedPackage);
+    if (Array.isArray(d.addOns)) setAddOns(d.addOns.map(String));
+    if (Array.isArray(d.pagesNeeded)) setPagesNeeded(d.pagesNeeded.map(String));
+    if (d.form && typeof d.form === "object") setForm((f) => ({ ...f, ...d.form }));
+    if (d.logo && typeof d.logo.url === "string") setLogo(d.logo);
+    if (Array.isArray(d.files)) setFiles(d.files.filter((x) => x && typeof x.url === "string"));
+  }
+
+  // Load: this device first, then the server copy (personal links) if it is newer.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let best: { data: Partial<Draft>; savedAt: number } | null = null;
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) best = JSON.parse(raw);
+      } catch {}
+      if (token) {
+        try {
+          const res = await fetch(`/api/public/onboarding/draft?token=${encodeURIComponent(token)}`, { cache: "no-store" });
+          const j = await res.json();
+          const t = j.draft?.savedAt ? new Date(j.draft.savedAt).getTime() : 0;
+          if (j.draft?.data && t > (best?.savedAt || 0)) best = { data: j.draft.data, savedAt: t };
+        } catch {}
+      }
+      if (cancelled) return;
+      if (best?.data) {
+        applyDraft(best.data);
+        setRestored(true);
+        setSavedAt(best.savedAt);
+      }
+      setDraftReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey, token]);
+
+  // Save: on this device right away, and to the server a moment after the client stops typing.
+  useEffect(() => {
+    if (!draftReady || submitted) return;
+    const data: Draft = { step, selectedPackage, addOns, pagesNeeded, form, logo, files };
+    if (localTimer.current) clearTimeout(localTimer.current);
+    localTimer.current = setTimeout(() => {
+      const now = Date.now();
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ data, savedAt: now }));
+      } catch {}
+      setSavedAt(now);
+    }, 400);
+    if (token) {
+      if (serverTimer.current) clearTimeout(serverTimer.current);
+      serverTimer.current = setTimeout(() => {
+        fetch("/api/public/onboarding/draft", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, data }),
+          keepalive: true,
+        }).catch(() => {});
+      }, 2500);
+    }
+  }, [draftReady, submitted, step, selectedPackage, addOns, pagesNeeded, form, logo, files, draftKey, token]);
+
+  function clearDraft() {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {}
+    if (serverTimer.current) clearTimeout(serverTimer.current);
+    if (localTimer.current) clearTimeout(localTimer.current);
+  }
+
+  async function startOver() {
+    clearDraft();
+    if (token) await fetch(`/api/public/onboarding/draft?token=${encodeURIComponent(token)}`, { method: "DELETE" }).catch(() => {});
+    window.location.reload();
+  }
 
   const update = (key: ObTextField) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
   const toggle = (list: string[], set: (v: string[]) => void, item: string) => set(list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
@@ -173,11 +280,13 @@ export function OnboardingForm({
           logoUrl: logo?.url || null,
           attachmentUrls: files.map((f) => f.url),
           token,
+          ref: referral?.code,
           company_site: honeypot,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Something went wrong");
+      clearDraft();
       setSubmitted(true);
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -237,6 +346,11 @@ export function OnboardingForm({
             <p className="mt-3 text-sm leading-relaxed text-white/60">
               Please fill out the details below so we can understand your business and deliver the perfect solution.
             </p>
+            {referral && (
+              <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">
+                <Gift className="h-3.5 w-3.5 text-[#b79cff]" /> Referred by {referral.by}
+              </p>
+            )}
 
             <div className="mt-7">
               <div className="mb-2 flex justify-between text-[11px] font-bold tracking-wide">
@@ -288,6 +402,11 @@ export function OnboardingForm({
                   <span className="font-bold text-brand dark:text-[#8f9bff]">Step {step} of 6</span>
                   <span className="text-muted"> — {OB_STEP_TITLES[step - 1]}</span>
                 </p>
+                {savedAt && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                    <Check className="h-3 w-3" /> Progress saved automatically. You can close this page and continue later.
+                  </p>
+                )}
               </div>
             </div>
             <span className="hidden lg:block">
@@ -297,6 +416,22 @@ export function OnboardingForm({
 
           {/* Bots fill every field they find; people never see this one. */}
           <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} name="company_site" />
+
+          {restored && (
+            <div className="mb-6 flex flex-col gap-2 rounded-2xl border border-emerald-300/50 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200 sm:flex-row sm:items-center sm:justify-between">
+              <span>
+                <b>Welcome back!</b> We restored your saved answers, so you can continue from step {step}.
+              </span>
+              <span className="flex gap-2">
+                <button type="button" onClick={() => setRestored(false)} className="btn btn-outline btn-sm">
+                  Continue
+                </button>
+                <button type="button" onClick={startOver} className="btn btn-ghost btn-sm">
+                  Start over
+                </button>
+              </span>
+            </div>
+          )}
 
           {step === 1 && (
             <>
@@ -510,6 +645,31 @@ export function OnboardingForm({
           <p className="mt-6 text-center text-xs text-muted">{companyName}</p>
         </section>
       </div>
+
+      {reviews.length > 0 && (
+        <section className="mx-auto mt-8 w-full max-w-[1180px]">
+          <h2 className="mb-4 text-center text-lg font-extrabold text-heading">What our clients say</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {reviews.map((r, i) => (
+              <figure key={i} className="card flex flex-col p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star key={n} className={cn("h-4 w-4", n <= r.rating ? "fill-amber-400 text-amber-400" : "text-line")} />
+                    ))}
+                  </div>
+                  <Quote className="h-5 w-5 text-brand/30" />
+                </div>
+                <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-fg">&ldquo;{r.text}&rdquo;</blockquote>
+                <figcaption className="mt-4 text-sm">
+                  <span className="font-bold text-heading">{r.name}</span>
+                  {r.company && <span className="text-muted"> · {r.company}</span>}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

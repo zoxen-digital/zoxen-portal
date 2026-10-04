@@ -24,6 +24,8 @@ const SettingsSchema = new Schema(
     meetingLink: String,
     // Starting text for new contracts. Empty = built-in template.
     contractTemplate: String,
+    // What a client gets for a referral that becomes a project (shown on their Refer & Earn page).
+    referralReward: { type: String, default: "10% off your next invoice for every friend who starts a project with us." },
   },
   { timestamps: true }
 );
