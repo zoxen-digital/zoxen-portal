@@ -29,7 +29,48 @@ export default async function PortalInvoices() {
         {invoices.length === 0 ? (
           <EmptyState icon={FileText} title="No invoices yet" />
         ) : (
-          <div className="overflow-x-auto p-3">
+          <>
+          {/* Phones: one card per invoice */}
+          <ul className="divide-y divide-line sm:hidden">
+            {invoices.map((i) => {
+              const balance = i.totals?.balance || 0;
+              const late = isOverdue(i.dueDate, balance <= 0);
+              return (
+                <li key={i._id}>
+                  <Link href={`/invoice/${i.publicId}`} target="_blank" className="block p-4 active:bg-surface-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-bold text-heading">{i.invoiceNumber}</div>
+                        {i.requirement?.summary && <div className="truncate text-xs text-muted">{i.requirement.summary}</div>}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Badge status={i.status} />
+                        {late && <Badge status="Overdue" />}
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <div className="text-muted">Total</div>
+                        <div className="font-semibold text-heading">{formatMoney(i.totals?.total, i.currency)}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted">Balance</div>
+                        <div className={balance > 0 ? "font-semibold text-red-500" : "font-semibold text-heading"}>{formatMoney(balance, i.currency)}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted">Due</div>
+                        <div className={late ? "font-semibold text-red-500" : "font-semibold text-heading"}>{formatDate(i.dueDate)}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-brand dark:text-[#8f9bff]">
+                      Open invoice <ExternalLink className="h-3.5 w-3.5" />
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto p-3 sm:block">
             <table className="table">
               <thead>
                 <tr>
@@ -73,6 +114,7 @@ export default async function PortalInvoices() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

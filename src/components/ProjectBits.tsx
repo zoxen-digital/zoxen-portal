@@ -27,7 +27,35 @@ export function StageTimeline({ stage, forClient }: { stage: string; forClient?:
           {forClient ? STAGE_INFO[stage as ProjectStage].client : stage === "Blocked" ? "Blocked: check the open issues" : "On hold"}
         </div>
       )}
-      <ol className="flex items-start gap-1 overflow-x-auto pb-1">
+      {/* Phones: a vertical list, so every step name fits */}
+      <ol className="space-y-0 sm:hidden">
+        {STAGE_PATH.map((s, i) => {
+          const done = current > i || (current === i && ["Live", "Completed"].includes(s));
+          const active = current === i && !done;
+          return (
+            <li key={s} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <span
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold",
+                    done && "border-brand bg-brand text-white",
+                    active && "border-brand bg-brand/10 text-brand ring-4 ring-brand/15 dark:text-[#8f9bff]",
+                    !done && !active && "border-line text-muted"
+                  )}
+                >
+                  {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                </span>
+                {i < STAGE_PATH.length - 1 && <span className={cn("w-0.5 flex-1 min-h-4", current > i ? "bg-brand" : "bg-line")} />}
+              </div>
+              <span className={cn("pb-3 pt-1 text-sm", active ? "font-bold text-heading" : done ? "font-medium text-fg" : "text-muted")}>
+                {forClient ? STAGE_INFO[s].client : s}
+                {active && <span className="ml-2 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand dark:text-[#8f9bff]">NOW</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      <ol className="hidden items-start gap-1 overflow-x-auto pb-1 sm:flex">
         {STAGE_PATH.map((s, i) => {
           const done = current > i || (current === i && ["Live", "Completed"].includes(s));
           const active = current === i && !done;
