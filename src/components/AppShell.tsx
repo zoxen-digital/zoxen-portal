@@ -53,8 +53,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] =
   { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
   { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
   { href: "/submissions", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin", "team_admin"] },
-  { href: "/quotes", label: "Quotes", icon: FilePen, roles: ["super_admin"] },
-  { href: "/contracts", label: "Contracts", icon: FileSignature, roles: ["super_admin"] },
+  { href: "/quotes", label: "Quotes & Contracts", icon: FilePen, roles: ["super_admin"] },
   { href: "/invoices", label: "Invoices", icon: FileText, roles: ["super_admin"] },
   { href: "/recurring", label: "Recurring Invoices", icon: Repeat, roles: ["super_admin"] },
   { href: "/packages", label: "Packages", icon: Package, roles: ["super_admin"] },
@@ -131,7 +130,8 @@ export function AppShell({
 
         <nav className={cn("mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pb-2", mini ? "px-2" : "px-4")}>
           {nav.map((item) => {
-            const active = item.href === "/agent" ? pathname === "/agent" : pathname === item.href || pathname.startsWith(item.href + "/");
+            const under = (p: string) => pathname === p || pathname.startsWith(p + "/");
+            const active = item.href === "/agent" ? pathname === "/agent" : under(item.href) || (item.href === "/quotes" && under("/contracts"));
             const Icon = item.icon;
             return (
               <Link
