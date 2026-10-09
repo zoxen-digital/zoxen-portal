@@ -5,7 +5,7 @@ import { Schema, model, models, type Model } from "mongoose";
 /** Every sign-in attempt (success or failure), for login history and new-device alerts. Kept 1 year. */
 const LoginEventSchema = new Schema(
   {
-    at: { type: Date, default: Date.now, index: true },
+    at: { type: Date, default: Date.now },
     user: { type: Schema.Types.ObjectId, ref: "User", index: true },
     email: String,
     name: String,

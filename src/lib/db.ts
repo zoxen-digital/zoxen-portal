@@ -7,6 +7,8 @@ const cached: Cache = g._mongoose ?? (g._mongoose = { conn: null, promise: null 
 
 export async function dbConnect() {
   if (cached.conn) return cached.conn;
+  // Register every model before the first query (a page that populates "client" may never import Client itself).
+  await import("@/models/all");
 
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI is not set. Add it to your .env.local file.");

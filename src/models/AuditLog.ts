@@ -5,7 +5,7 @@ import { Schema, model, models, type Model } from "mongoose";
 /** Who did what, when, from where. Append-only: nothing in the app edits or deletes it. Kept 1 year. */
 const AuditLogSchema = new Schema(
   {
-    at: { type: Date, default: Date.now, index: true },
+    at: { type: Date, default: Date.now },
     actorId: { type: Schema.Types.ObjectId, ref: "User", index: true },
     actorName: String,
     actorRole: String,
