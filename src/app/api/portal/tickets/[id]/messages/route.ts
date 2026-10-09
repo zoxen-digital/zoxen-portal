@@ -9,7 +9,7 @@ export const GET = handle(async (_req: Request, { params }: Ctx) => {
   const user = await apiUser(["client"]);
   const { id } = await params;
   const ticket = await ticketFor(user, id);
-  return json(await listMessages({ ticket: String(ticket._id) }));
+  return json(await listMessages({ ticket: String(ticket._id) }, true));
 });
 
 export const POST = handle(async (req: Request, { params }: Ctx) => {

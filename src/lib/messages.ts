@@ -1,4 +1,6 @@
 import { HttpError } from "./api";
+import { getSettings } from "./settings";
+import { toClientMessage, touchConversation } from "./inbox";
 import { cleanAttachments } from "./docs";
 import { clientUserIds, notify, superAdminIds } from "./notify";
 import type { CurrentUser } from "./session";
@@ -8,8 +10,12 @@ import { Ticket } from "@/models/Ticket";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export async function listMessages(filter: { project?: string; ticket?: string }) {
-  return Message.find(filter).sort({ createdAt: 1 }).limit(500).lean();
+/** Messages on a project or ticket. Clients never get internal notes, and see the team as the company name. */
+export async function listMessages(filter: { project?: string; ticket?: string }, forClient = false) {
+  const list = await Message.find({ ...filter, ...(forClient ? { internal: { $ne: true } } : {}) }).sort({ createdAt: 1 }).limit(500).lean<any[]>();
+  if (!forClient) return list;
+  const { companyName } = await getSettings();
+  return list.map((m) => toClientMessage(m, companyName));
 }
 
 // Clients get an email for a team reply, but not for every message in a quick back-and-forth.
@@ -46,7 +52,11 @@ export async function postMessage(
   });
 
   // Touch the parent so live updates and "latest activity" sorting pick it up.
-  if (thread.kind === "project") await Project.updateOne({ _id: doc._id }, { $set: { lastMessageAt: new Date() } });
+  if (thread.kind === "project") {
+    await Project.updateOne({ _id: doc._id }, { $set: { lastMessageAt: new Date() } });
+    // Project chat is part of the client inbox chat too.
+    await touchConversation(String(doc.client), { body, attachments, authorName: user.name, authorRole: user.role, at: message.createdAt });
+  }
   else {
     // A client reply on a ticket that was waiting on them (or marked resolved) puts it back in the team's queue.
     const reopen = user.role === "client" && ["Waiting on Client", "Resolved"].includes(doc.status);

@@ -19,6 +19,8 @@ import { ticketScope } from "@/lib/tickets";
 import { AuditLog } from "@/models/AuditLog";
 import { LoginEvent } from "@/models/LoginEvent";
 import { TrashItem } from "@/models/TrashItem";
+import { Conversation } from "@/models/Conversation";
+import { inboxScope } from "@/lib/inbox";
 import type { Model } from "mongoose";
 
 /** Time of the newest change in a collection the user can see (0 if none). */
@@ -38,6 +40,9 @@ export const GET = handle(async () => {
   const scope = projectScope(user);
 
   const parts: Promise<number>[] = [latest(Notification as Model<unknown>, { user: me }), latest(Project as Model<unknown>, scope)];
+  // Chats: only new messages count (reading a chat must not trigger refreshes for everyone).
+  if (user.role === "super_admin" || user.role === "team_admin") parts.push(latest(Conversation as Model<unknown>, await inboxScope(user), "lastMessageAt"));
+  else if (user.role === "client") parts.push(latest(Conversation as Model<unknown>, { client: scope.client }, "lastMessageAt"));
   if (user.role === "agent") {
     for (const m of [Invoice, AuditLog, LoginEvent, TrashItem, Project, Ticket]) parts.push(latest(m as Model<unknown>, {}, m === AuditLog || m === LoginEvent ? "at" : m === TrashItem ? "deletedAt" : "updatedAt"));
   } else if (user.role === "super_admin") {

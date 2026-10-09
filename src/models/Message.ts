@@ -18,12 +18,16 @@ const MessageSchema = new Schema(
     authorRole: String,
     body: { type: String, default: "" },
     attachments: { type: [AttachmentSchema], default: [] },
+    /** Team-only note inside the client chat. Never sent to the client. */
+    internal: { type: Boolean, default: false },
+    mentions: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );
 
 MessageSchema.index({ project: 1, createdAt: 1 });
 MessageSchema.index({ ticket: 1, createdAt: 1 });
+MessageSchema.index({ client: 1, ticket: 1, createdAt: -1 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const Message: Model<any> = models.Message || model("Message", MessageSchema);

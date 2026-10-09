@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
-  ChevronDown,
   ClipboardList,
   FileSignature,
   FileText,
@@ -15,6 +14,7 @@ import {
   LifeBuoy,
   LogOut,
   Menu,
+  MessageCircle,
   MessageSquareQuote,
   X,
 } from "lucide-react";
@@ -25,35 +25,30 @@ import { LiveUpdates } from "./LiveUpdates";
 import { Avatar } from "./ui";
 import { cn } from "@/lib/utils";
 
+/** Chat first: it is the one place clients talk to us. Everything else is secondary. */
 const NAV = [
-  { href: "/portal", label: "Overview", icon: LayoutGrid, exact: true },
-  { href: "/portal/onboarding", label: "Onboarding", icon: ClipboardList },
-  { href: "/portal/tickets", label: "Support", icon: LifeBuoy },
-  { href: "/portal/documents", label: "Proposals", icon: FileSignature },
+  { href: "/portal/chat", label: "Chat", icon: MessageCircle },
+  { href: "/portal", label: "My Projects", icon: LayoutGrid, exact: true },
   { href: "/portal/invoices", label: "Invoices", icon: FileText },
+  { href: "/portal/documents", label: "Proposals", icon: FileSignature },
+  { href: "/portal/tickets", label: "Support", icon: LifeBuoy },
+  { href: "/portal/onboarding", label: "Onboarding", icon: ClipboardList },
   { href: "/portal/reports", label: "Reports", icon: BarChart3 },
   { href: "/portal/reviews", label: "Reviews", icon: MessageSquareQuote },
   { href: "/portal/referrals", label: "Refer & Earn", icon: Gift },
 ];
 
 /** The four pages a client opens most; the rest sit behind "More" on phones. */
-const TABS = ["/portal", "/portal/tickets", "/portal/documents", "/portal/invoices"];
+const TABS = ["/portal/chat", "/portal", "/portal/invoices", "/portal/tickets"];
 
-export function PortalShell({ children, userName, company }: { children: React.ReactNode; userName: string; company: string }) {
+export function PortalShell({ children, userName, company, unread = 0 }: { children: React.ReactNode; userName: string; company: string; unread?: number }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
   const isActive = (n: (typeof NAV)[number]) => (n.exact ? pathname === n.href || pathname.startsWith("/portal/projects") : pathname.startsWith(n.href));
   const moreActive = NAV.some((n) => !TABS.includes(n.href) && isActive(n)) || pathname.startsWith("/portal/account");
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setMenu(false);
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
+  const onChat = pathname.startsWith("/portal/chat");
 
   // Close the phone menu after navigating, and stop the page scrolling behind it.
   useEffect(() => setSheet(false), [pathname]);
@@ -72,68 +67,83 @@ export function PortalShell({ children, userName, company }: { children: React.R
     router.refresh();
   }
 
+  const badge = (n: (typeof NAV)[number], light?: boolean) =>
+    n.href === "/portal/chat" && unread > 0 && !onChat ? (
+      <span className={cn("ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold", light ? "bg-white/25 text-white" : "bg-red-500 text-white")}>{unread}</span>
+    ) : null;
+
   return (
     <div className="min-h-screen">
       <LiveUpdates />
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
-          <Link href="/portal" className="min-w-0 shrink">
+
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface lg:flex">
+        <div className="flex h-16 items-center px-5">
+          <Link href="/portal/chat">
             <Logo />
           </Link>
-          <div className="ml-auto flex items-center gap-1 sm:gap-2">
-            <span className="hidden sm:block">
-              <ThemeToggle />
-            </span>
-            <NotificationBell />
-            <div className="relative hidden lg:block" ref={ref}>
-              <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2 rounded-xl p-1 pr-2 hover:bg-surface-2">
-                <Avatar name={userName} className="h-9 w-9" />
-                <div className="text-left leading-tight">
-                  <div className="text-sm font-semibold text-heading">{userName}</div>
-                  <div className="max-w-[160px] truncate text-xs text-muted">{company}</div>
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted" />
-              </button>
-              {menu && (
-                <div className="card absolute right-0 mt-2 w-56 p-2 shadow-xl">
-                  <Link href="/portal/account" onClick={() => setMenu(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
-                    <KeyRound className="h-4 w-4" /> My account
-                  </Link>
-                  <button onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-500/10">
-                    <LogOut className="h-4 w-4" /> Sign out
-                  </button>
-                </div>
-              )}
+        </div>
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+          {NAV.map((n) => {
+            const active = isActive(n);
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                  active ? "bg-brand-gradient text-white shadow" : "text-muted hover:bg-surface-2 hover:text-fg"
+                )}
+              >
+                <n.icon className="h-[18px] w-[18px] shrink-0" />
+                <span className="truncate">{n.label}</span>
+                {badge(n, active)}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="border-t border-line p-3">
+          <div className="flex items-center gap-3 rounded-xl p-2">
+            <Avatar name={userName} className="h-9 w-9" />
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-sm font-semibold text-heading">{userName}</div>
+              <div className="truncate text-xs text-muted">{company}</div>
             </div>
-            <button onClick={() => setSheet(true)} className="btn btn-ghost px-2.5 lg:hidden" aria-label="Open menu">
-              <Menu className="h-5 w-5" />
+          </div>
+          <div className="mt-1 grid grid-cols-2 gap-1">
+            <Link href="/portal/account" className="flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-muted hover:bg-surface-2 hover:text-fg">
+              <KeyRound className="h-3.5 w-3.5" /> Account
+            </Link>
+            <button onClick={logout} className="flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10">
+              <LogOut className="h-3.5 w-3.5" /> Sign out
             </button>
           </div>
         </div>
+      </aside>
 
-        {/* Desktop: one centered row, same width as the page content */}
-        <nav className="hidden border-t border-line lg:block">
-          <div className="mx-auto flex max-w-6xl items-center justify-center gap-1 px-6 py-2">
-            {NAV.map((n) => {
-              const active = isActive(n);
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className={cn(
-                    "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition",
-                    active ? "bg-brand-gradient text-white shadow" : "text-muted hover:bg-surface-2 hover:text-fg"
-                  )}
-                >
-                  <n.icon className="h-4 w-4" /> {n.label}
-                </Link>
-              );
-            })}
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl">
+          <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+            <Link href="/portal/chat" className="min-w-0 shrink lg:hidden">
+              <Logo />
+            </Link>
+            <div className="hidden min-w-0 lg:block">
+              <div className="truncate text-sm font-semibold text-heading">{company || userName}</div>
+            </div>
+            <div className="ml-auto flex items-center gap-1 sm:gap-2">
+              <span className="hidden sm:block">
+                <ThemeToggle />
+              </span>
+              <NotificationBell />
+              <button onClick={() => setSheet(true)} className="btn btn-ghost px-2.5 lg:hidden" aria-label="Open menu">
+                <Menu className="h-5 w-5" />
+              </button>
+            </div>
           </div>
-        </nav>
-      </header>
+        </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:pb-16">{children}</main>
+        <main className={cn("mx-auto max-w-6xl px-4 sm:px-6", onChat ? "pb-20 pt-3 lg:pb-6 lg:pt-6" : "pb-28 pt-6 lg:pb-16")}>{children}</main>
+      </div>
 
       {/* Phones & tablets: app-style bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
@@ -141,11 +151,14 @@ export function PortalShell({ children, userName, company }: { children: React.R
           {NAV.filter((n) => TABS.includes(n.href)).map((n) => {
             const active = isActive(n);
             return (
-              <Link key={n.href} href={n.href} className={cn("flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-brand dark:text-[#8f9bff]" : "text-muted")}>
-                <span className={cn("flex h-8 w-12 items-center justify-center rounded-full transition", active && "bg-brand/10")}>
+              <Link key={n.href} href={n.href} className={cn("relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-brand dark:text-[#8f9bff]" : "text-muted")}>
+                <span className={cn("relative flex h-8 w-12 items-center justify-center rounded-full transition", active && "bg-brand/10")}>
                   <n.icon className="h-5 w-5" />
+                  {n.href === "/portal/chat" && unread > 0 && !onChat && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">{unread}</span>
+                  )}
                 </span>
-                {n.label}
+                {n.label === "My Projects" ? "Projects" : n.label}
               </Link>
             );
           })}

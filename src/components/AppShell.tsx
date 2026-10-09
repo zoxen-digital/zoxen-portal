@@ -34,6 +34,7 @@ import {
   ClipboardList,
   Users,
   X,
+  MessagesSquare,
 } from "lucide-react";
 import { Logo, LogoMark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
@@ -46,6 +47,7 @@ import type { RoleT } from "@/lib/types";
 const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid, roles: ["super_admin"] },
   { href: "/today", label: "My Day", icon: Sun, roles: ["super_admin", "team_admin"] },
+  { href: "/inbox", label: "Inbox", icon: MessagesSquare, roles: ["super_admin", "team_admin"] },
   { href: "/projects", label: "Projects", icon: Rocket, roles: ["super_admin", "team_admin"] },
   { href: "/tickets", label: "Support Tickets", icon: LifeBuoy, roles: ["super_admin", "team_admin"] },
   { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
@@ -77,12 +79,14 @@ export function AppShell({
   userEmail,
   role,
   newSubmissions,
+  unreadChats = 0,
 }: {
   children: React.ReactNode;
   userName: string;
   userEmail: string;
   role: RoleT;
   newSubmissions: number;
+  unreadChats?: number;
 }) {
   const pathname = usePathname();
   const nav = NAV.filter((n) => n.roles.includes(role));
@@ -144,6 +148,9 @@ export function AppShell({
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
                 {!mini && <span className="flex-1 truncate">{item.label}</span>}
+                {!mini && item.href === "/inbox" && unreadChats > 0 && (
+                  <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{unreadChats}</span>
+                )}
                 {!mini && item.href === "/submissions" && newSubmissions > 0 && (
                   <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", active ? "bg-white/20" : "bg-violet/10 text-violet")}>
                     {newSubmissions}

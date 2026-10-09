@@ -36,7 +36,7 @@ export async function verifySession(token?: string | null): Promise<Session | nu
 
 /** Where each role lands after signing in. */
 export function homeFor(role: Role) {
-  return role === "client" ? "/portal" : role === "team_admin" ? "/today" : role === "agent" ? "/agent" : "/dashboard";
+  return role === "client" ? "/portal/chat" : role === "team_admin" ? "/today" : role === "agent" ? "/agent" : "/dashboard";
 }
 
 export const SESSION_COOKIE_OPTIONS = {

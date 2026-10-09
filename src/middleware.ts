@@ -27,7 +27,7 @@ const AGENT_ONLY = ["/agent", "/api/agent"];
 
 // Super admin may open everything except the client portal and the owner area.
 const ALLOWED: Record<Exclude<Role, "super_admin">, string[]> = {
-  team_admin: ["/today", "/projects", "/api/projects", "/tickets", "/api/tickets", "/queries", "/api/queries", "/submissions", "/api/onboarding", "/account"],
+  team_admin: ["/today", "/inbox", "/api/inbox", "/projects", "/api/projects", "/tickets", "/api/tickets", "/queries", "/api/queries", "/submissions", "/api/onboarding", "/account"],
   client: ["/portal", "/api/portal"],
   // The hidden owner account: its own pages, read-only reports, and its profile.
   agent: ["/agent", "/api/agent", "/reports", "/account"],

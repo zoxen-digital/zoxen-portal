@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertCircle, ArrowLeft, CheckCircle2, Circle, ExternalLink, FileText, Globe, MessageSquareText, RefreshCcw, Star } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Circle, ExternalLink, FileText, Globe, MessageSquareText, RefreshCcw, Star, MessageCircle } from "lucide-react";
 import { dbConnect } from "@/lib/db";
 import { pageUser } from "@/lib/session";
 import { projectScope, toPortal } from "@/lib/projects";
@@ -12,7 +12,6 @@ import { ProgressBar } from "@/components/ProjectForm";
 import { ActivityFeed, StageTimeline } from "@/components/ProjectBits";
 import { FeedbackForm, ReviewActions } from "@/components/PortalActions";
 import { LocalTime } from "@/components/LocalTime";
-import { ChatThread } from "@/components/ChatThread";
 import { formatDate, serialize } from "@/lib/utils";
 import type { ActivityT, ProjectT } from "@/lib/types";
 
@@ -115,20 +114,23 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
             ))}
           </ul>
           <p className="mt-3 text-xs text-muted">
-            Send what is needed in the <a href="#chat" className="font-semibold text-brand hover:underline dark:text-[#8f9bff]">project chat</a> below (you can attach files). This disappears once we receive it.
+            Send what is needed in the <Link href="/portal/chat" className="font-semibold text-brand hover:underline dark:text-[#8f9bff]">chat</Link> (you can attach files). This disappears once we receive it.
           </p>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <ChatThread
-            endpoint={`/api/portal/projects/${p._id}/messages`}
-            side="client"
-            title="Message the team"
-            subtitle="Questions, feedback and files: everything about this project in one place."
-            uploads={!!process.env.BLOB_READ_WRITE_TOKEN}
-          />
+          <Link href="/portal/chat" className="card flex items-center gap-4 p-5 transition hover:bg-surface-2">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand dark:text-[#8f9bff]">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-heading">Message the team</div>
+              <div className="text-sm text-muted">Questions, feedback and files: send them in your chat.</div>
+            </div>
+            <span className="btn btn-primary btn-sm">Open chat</span>
+          </Link>
           {p.clientUpdate && (
             <div className="card p-5">
               <h2 className="mb-2 flex items-center gap-2 font-bold text-heading">
