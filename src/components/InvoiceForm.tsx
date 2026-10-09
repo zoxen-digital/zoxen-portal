@@ -10,6 +10,7 @@ import { CURRENCIES, ITEM_PRESETS } from "@/lib/constants";
 import { formatMoney, toInputDate } from "@/lib/utils";
 import type { InvoiceT, PaymentDetails, SettingsT } from "@/lib/types";
 import { Field } from "./ui";
+import { PackagePicker } from "./PackagePicker";
 import type { ClientOption } from "./QueryForm";
 
 type Item = { description: string; details: string; qty: string; unit: string; rate: string };
@@ -259,9 +260,12 @@ export function InvoiceForm({
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => setItems((l) => [...l, blankItem()])} className="btn btn-outline btn-sm mt-3">
-            <Plus className="h-4 w-4" /> Add item
-          </button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setItems((l) => [...l, blankItem()])} className="btn btn-outline btn-sm">
+              <Plus className="h-4 w-4" /> Add item
+            </button>
+            <PackagePicker onPick={(lines) => setItems((l) => [...l.filter((i) => i.description.trim() || i.rate), ...lines])} />
+          </div>
         </section>
 
         {/* Extra costs, discount, tax */}

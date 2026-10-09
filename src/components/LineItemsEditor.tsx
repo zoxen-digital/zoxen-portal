@@ -7,6 +7,8 @@ import { formatMoney } from "@/lib/utils";
 import { Field } from "./ui";
 import type { InvoiceItem } from "@/lib/types";
 
+import { PackagePicker } from "./PackagePicker";
+
 export type LineItem = { description: string; details: string; qty: string; unit: string; rate: string };
 export type Lines = { items: LineItem[]; currency: string; discountType: "fixed" | "percent"; discountValue: string; taxPercent: string };
 
@@ -64,9 +66,19 @@ export function LineItemsEditor({ value, onChange, pricing = true }: { value: Li
             <input className="input col-span-12" placeholder="Details (optional)" value={it.details} onChange={(e) => setItem(i, "details", e.target.value)} />
           </div>
         ))}
-        <button type="button" onClick={() => onChange({ ...value, items: [...value.items, blankLine()] })} className="btn btn-outline btn-sm">
-          <Plus className="h-4 w-4" /> Add item
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => onChange({ ...value, items: [...value.items, blankLine()] })} className="btn btn-outline btn-sm">
+            <Plus className="h-4 w-4" /> Add item
+          </button>
+          {pricing && (
+            <PackagePicker
+              onPick={(lines, pkg) => {
+                const kept = value.items.filter((i) => i.description.trim() || i.rate);
+                onChange({ ...value, items: [...kept, ...lines], currency: kept.length ? value.currency : pkg.currency });
+              }}
+            />
+          )}
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
