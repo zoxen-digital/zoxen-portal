@@ -10,6 +10,9 @@ import { Quote } from "@/models/Quote";
 import { User } from "@/models/User";
 import { AuditLog } from "@/models/AuditLog";
 import { LoginEvent } from "@/models/LoginEvent";
+import { Expense } from "@/models/Expense";
+import { nextRenewal } from "./expenses";
+import { formatMoney } from "./utils";
 
 const DAY = 86_400_000;
 const SYSTEM = { name: "Automatic reminder", role: "system" };
@@ -146,6 +149,31 @@ async function ownerSummary() {
   return 1;
 }
 
+/** Subscriptions renewing within 7 days: remind super admins once per renewal, then roll past dates forward. */
+async function expenseRenewals() {
+  const list = await Expense.find({ active: true, cycle: { $ne: "One-time" }, renewsOn: { $ne: null } }).limit(500);
+  const admins = await superAdminIds();
+  let sent = 0;
+  for (const e of list) {
+    let due = new Date(e.renewsOn);
+    // Renewal passed: it was paid, move to the next date.
+    if (due.getTime() < Date.now() - 86_400_000) {
+      due = nextRenewal(due, e.cycle);
+      await Expense.updateOne({ _id: e._id }, { $set: { renewsOn: due } });
+    }
+    const days = Math.ceil((due.getTime() - Date.now()) / 86_400_000);
+    if (days > 7 || (e.reminderFor && new Date(e.reminderFor).getTime() === due.getTime())) continue;
+    await Expense.updateOne({ _id: e._id }, { $set: { reminderFor: due } });
+    await notify(admins, {
+      title: `Renewal ${days <= 0 ? "due today" : `in ${days} day${days === 1 ? "" : "s"}`}: ${e.title}`,
+      body: `${formatMoney(e.amount, e.currency)}${e.vendor ? ` to ${e.vendor}` : ""}. Make sure the card has funds so nothing goes offline.`,
+      link: "/expenses",
+    });
+    sent++;
+  }
+  return sent;
+}
+
 /** Everything the daily job does. Each part is isolated so one failure does not stop the rest. */
 export async function runDailyJobs() {
   await dbConnect();
@@ -158,6 +186,7 @@ export async function runDailyJobs() {
     ["expiredQuotes", expireQuotes],
     ["staffDigests", staffDigest],
     ["ownerSummary", ownerSummary],
+    ["expenseRenewals", expenseRenewals],
   ];
   for (const [name, job] of jobs) {
     try {

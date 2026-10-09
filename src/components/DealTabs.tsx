@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FilePen, FileSignature, FileText, Package, Repeat, type LucideIcon } from "lucide-react";
+import { FilePen, FileSignature, FileText, Package, Repeat, Wallet, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Tab = { href: string; label: string; hint: string; icon: LucideIcon };
@@ -14,6 +14,7 @@ const GROUPS: Record<string, Tab[]> = {
     { href: "/invoices", label: "Invoices", hint: "Bills sent", icon: FileText },
     { href: "/recurring", label: "Recurring", hint: "Monthly auto bills", icon: Repeat },
     { href: "/packages", label: "Packages", hint: "Ready services", icon: Package },
+    { href: "/expenses", label: "Expenses", hint: "What we pay", icon: Wallet },
   ],
 };
 
@@ -43,5 +44,5 @@ export function SectionTabs({ group, current }: { group: keyof typeof GROUPS; cu
 /** Menu item href -> other paths that should light it up. */
 export const MENU_GROUPS: Record<string, string[]> = {
   "/quotes": ["/contracts"],
-  "/invoices": ["/recurring", "/packages"],
+  "/invoices": ["/recurring", "/packages", "/expenses"],
 };

@@ -3,6 +3,8 @@ import "./Activity";
 import "./AuditLog";
 import "./Client";
 import "./Contract";
+import "./Conversation";
+import "./Expense";
 import "./Integration";
 import "./Invoice";
 import "./LoginEvent";
