@@ -95,7 +95,11 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                       </td>
                       <td className="whitespace-nowrap text-muted">{u.lastLoginAt ? formatDate(u.lastLoginAt) : "Never"}</td>
                       <td>
-                        <UserActions user={u} clients={clients} isMe={u._id === me.id} mailOn={mailEnabled()} />
+                        {u.role === "super_admin" ? (
+                          <span className="text-xs text-muted">Managed by owner</span>
+                        ) : (
+                          <UserActions user={u} clients={clients} isMe={u._id === me.id} mailOn={mailEnabled()} />
+                        )}
                       </td>
                     </tr>
                   );

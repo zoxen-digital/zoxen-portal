@@ -7,6 +7,8 @@ export type Role = (typeof ROLES)[number];
 
 /** Roles a super admin may create or edit. The hidden "agent" (owner) account is never one of them. */
 export const MANAGED_ROLES = ["super_admin", "team_admin", "client"] as const;
+/** What a super admin may create or manage. Super admins themselves are created and managed only by the owner (agent). */
+export const ADMIN_MANAGED_ROLES = ["team_admin", "client"] as const;
 
 export type Session = { uid: string; role: Role; name: string; email: string; cid?: string; /** session version: bumped to force logout */ sv?: number };
 

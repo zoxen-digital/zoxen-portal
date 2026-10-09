@@ -3,7 +3,7 @@ import { User } from "@/models/User";
 import { Project } from "@/models/Project";
 import { error, handle, json, pick, validId } from "@/lib/api";
 import { ADMIN, apiUser } from "@/lib/session";
-import { MANAGED_ROLES } from "@/lib/auth";
+import { ADMIN_MANAGED_ROLES } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -17,12 +17,12 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
   // The hidden owner (agent) account is invisible here: it does not exist for super admins.
-  const user = await User.findOne({ _id: id, role: { $ne: "agent" } });
+  const user = await User.findOne({ _id: id, role: { $nin: ["agent", "super_admin"] } });
   if (!user) return error("User not found", 404);
 
   const data = pick(await req.json(), ["name", "role", "client", "title", "phone", "status"]);
   if ("name" in data && !data.name) return error("Name is required");
-  if ("role" in data && !MANAGED_ROLES.includes(data.role as never)) return error("Invalid role");
+  if ("role" in data && !ADMIN_MANAGED_ROLES.includes(data.role as never)) return error("Choose Team Admin or Client. Super admins are managed by the owner.");
   if ("status" in data && !["active", "disabled", "invited"].includes(String(data.status))) return error("Invalid status");
 
   const losingAdmin =
@@ -56,7 +56,7 @@ export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
   if (!validId(id)) return error("Invalid id", 404);
   if (id === me.id) return error("You cannot delete your own account");
   await dbConnect();
-  const user = await User.findOne({ _id: id, role: { $ne: "agent" } });
+  const user = await User.findOne({ _id: id, role: { $nin: ["agent", "super_admin"] } });
   if (!user) return json({ ok: true });
   if (user.role === "super_admin" && !(await otherActiveSuperAdmins(id))) return error("Keep at least one active super admin");
   await Project.updateMany({ team: id }, { $pull: { team: id } });

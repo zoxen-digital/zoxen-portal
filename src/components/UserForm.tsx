@@ -110,7 +110,6 @@ export function UserFormModal({
             <select className="input" value={form.role} onChange={set("role")}>
               <option value="team_admin">Team Admin</option>
               <option value="client">Client (portal)</option>
-              <option value="super_admin">Super Admin</option>
             </select>
             <p className="mt-1.5 text-xs text-muted">{ROLE_HELP[form.role]}</p>
           </Field>

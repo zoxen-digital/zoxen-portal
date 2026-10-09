@@ -4,7 +4,7 @@ import { Client } from "@/models/Client";
 import { error, handle, json, pick, validId } from "@/lib/api";
 import { ADMIN, apiUser } from "@/lib/session";
 import { issueInvite } from "@/lib/invite";
-import { MANAGED_ROLES } from "@/lib/auth";
+import { ADMIN_MANAGED_ROLES } from "@/lib/auth";
 import { USER_FIELDS } from "@/lib/fields";
 
 export const GET = handle(async () => {
@@ -22,7 +22,7 @@ export const POST = handle(async (req: Request) => {
   data.email = String(data.email || "").toLowerCase();
   if (!data.name) return error("Name is required");
   if (!/^\S+@\S+\.\S+$/.test(String(data.email))) return error("Enter a valid email");
-  if (!MANAGED_ROLES.includes(data.role as never)) return error("Choose a role");
+  if (!ADMIN_MANAGED_ROLES.includes(data.role as never)) return error("Choose Team Admin or Client. Super admins are added by the owner.");
   if (data.role === "client") {
     if (!data.client || !validId(String(data.client))) return error("Choose which client this login belongs to");
     if (!(await Client.exists({ _id: data.client }))) return error("Client not found");
