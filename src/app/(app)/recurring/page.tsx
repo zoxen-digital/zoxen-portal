@@ -7,6 +7,7 @@ import { calcTotals } from "@/lib/invoice-calc";
 import { RecurringPlan } from "@/models/RecurringPlan";
 import { Client } from "@/models/Client";
 import { EmptyState, PageHeader, StatCard } from "@/components/ui";
+import { SectionTabs } from "@/components/DealTabs";
 import { DeleteButton, StatusSelect } from "@/components/actions";
 import { NewRecurringButton, RecurringRowActions } from "@/components/RecurringForms";
 import { formatDate, formatMoney, serialize } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default async function RecurringPage() {
 
   return (
     <div>
+      <SectionTabs group="billing" current="/recurring" />
       <PageHeader title="Recurring invoices" subtitle="Maintenance, SEO and ads retainers bill themselves: invoice created and sent to the client on each date.">
         <NewRecurringButton clients={clients} settings={formSettings} />
       </PageHeader>

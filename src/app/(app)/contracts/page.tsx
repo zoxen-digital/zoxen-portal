@@ -4,7 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { ADMIN, pageUser } from "@/lib/session";
 import { Contract } from "@/models/Contract";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
-import { DealTabs } from "@/components/DealTabs";
+import { SectionTabs } from "@/components/DealTabs";
 import { StatusTabs } from "@/components/Filters";
 import { CONTRACT_STATUSES } from "@/lib/constants";
 import { formatDate, serialize } from "@/lib/utils";
@@ -26,7 +26,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div>
-      <DealTabs current="contracts" />
+      <SectionTabs group="deals" current="/contracts" />
       <PageHeader title="Contracts" subtitle="Agreements clients sign online. Name, date, time and IP are recorded as proof.">
         <Link href="/contracts/new" className="btn btn-primary">
           <Plus className="h-4 w-4" /> New contract

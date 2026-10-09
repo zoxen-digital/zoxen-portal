@@ -3,6 +3,7 @@ import { Eye, FileText, Plus, CheckCircle2, ExternalLink, Pencil } from "lucide-
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
+import { SectionTabs } from "@/components/DealTabs";
 import { CopyButton } from "@/components/actions";
 import { SearchBox, StatusTabs } from "@/components/Filters";
 import { escapeRegex, formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
@@ -49,6 +50,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: SP 
 
   return (
     <div>
+      <SectionTabs group="billing" current="/invoices" />
       <PageHeader title="Invoices" subtitle="Create, share and track payment on every invoice.">
         <Link href="/invoices/new" className="btn btn-primary">
           <Plus className="h-4 w-4" /> Create Invoice

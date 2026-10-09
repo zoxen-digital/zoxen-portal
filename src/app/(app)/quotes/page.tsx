@@ -6,7 +6,7 @@ import { isExpired } from "@/lib/quotes";
 import { Quote } from "@/models/Quote";
 import { Client } from "@/models/Client";
 import { Badge, EmptyState, PageHeader, StatCard } from "@/components/ui";
-import { DealTabs } from "@/components/DealTabs";
+import { SectionTabs } from "@/components/DealTabs";
 import { SearchBox, StatusTabs } from "@/components/Filters";
 import { QUOTE_STATUSES } from "@/lib/constants";
 import { escapeRegex, formatDate, formatMoney, serialize } from "@/lib/utils";
@@ -39,7 +39,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
 
   return (
     <div>
-      <DealTabs current="quotes" />
+      <SectionTabs group="deals" current="/quotes" />
       <PageHeader title="Quotes" subtitle="Price offers. The client accepts online, and accepting creates the project and the invoice automatically.">
         <Link href="/quotes/new" className="btn btn-primary">
           <Plus className="h-4 w-4" /> New quote

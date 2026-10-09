@@ -9,10 +9,7 @@ import {
   Rocket,
   Sun,
   LifeBuoy,
-  FileSignature,
   FilePen,
-  Repeat,
-  Package,
   MessageSquareQuote,
   Gift,
   ScrollText,
@@ -36,6 +33,7 @@ import {
   X,
   MessagesSquare,
 } from "lucide-react";
+import { MENU_GROUPS } from "./DealTabs";
 import { Logo, LogoMark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar } from "./ui";
@@ -54,9 +52,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] =
   { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
   { href: "/submissions", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin", "team_admin"] },
   { href: "/quotes", label: "Quotes & Contracts", icon: FilePen, roles: ["super_admin"] },
-  { href: "/invoices", label: "Invoices", icon: FileText, roles: ["super_admin"] },
-  { href: "/recurring", label: "Recurring Invoices", icon: Repeat, roles: ["super_admin"] },
-  { href: "/packages", label: "Packages", icon: Package, roles: ["super_admin"] },
+  { href: "/invoices", label: "Invoices & Billing", icon: FileText, roles: ["super_admin"] },
   { href: "/reviews", label: "Client Reviews", icon: MessageSquareQuote, roles: ["super_admin"] },
   { href: "/referrals", label: "Referrals", icon: Gift, roles: ["super_admin"] },
   { href: "/agent", label: "My Day", icon: Sun, roles: ["agent"] },
@@ -131,7 +127,7 @@ export function AppShell({
         <nav className={cn("mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pb-2", mini ? "px-2" : "px-4")}>
           {nav.map((item) => {
             const under = (p: string) => pathname === p || pathname.startsWith(p + "/");
-            const active = item.href === "/agent" ? pathname === "/agent" : under(item.href) || (item.href === "/quotes" && under("/contracts"));
+            const active = item.href === "/agent" ? pathname === "/agent" : under(item.href) || (MENU_GROUPS[item.href] || []).some(under);
             const Icon = item.icon;
             return (
               <Link

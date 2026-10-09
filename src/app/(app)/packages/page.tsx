@@ -4,6 +4,7 @@ import { ADMIN, pageUser } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
 import { Package } from "@/models/Package";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
+import { SectionTabs } from "@/components/DealTabs";
 import { DeleteButton, StatusSelect } from "@/components/actions";
 import { EditPackageButton, NewPackageButton } from "@/components/PackageForms";
 import { itemsTotal } from "@/lib/invoice-calc";
@@ -20,6 +21,7 @@ export default async function PackagesPage() {
 
   return (
     <div>
+      <SectionTabs group="billing" current="/packages" />
       <PageHeader title="Packages" subtitle="Ready-made services. Start one for a client in one click: quote, or project + invoice with the checklist and timeline set.">
         <NewPackageButton currency={settings.defaultCurrency} />
       </PageHeader>
