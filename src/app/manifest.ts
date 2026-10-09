@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Zoxen Digital Portal",
     short_name: "Zoxen",
     description: "Projects, approvals, invoices and updates.",
-    start_url: "/login",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

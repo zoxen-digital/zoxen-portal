@@ -1,10 +1,18 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { currentUser } from "@/lib/session";
+import { homeFor } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
 import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "Sign in" };
 
-export default function LoginPage() {
+export const dynamic = "force-dynamic";
+
+export default async function LoginPage() {
+  // Already signed in (e.g. the installed app reopening on its start page): go straight in.
+  const user = await currentUser().catch(() => null);
+  if (user) redirect(homeFor(user.role));
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
