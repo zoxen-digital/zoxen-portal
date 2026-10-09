@@ -127,6 +127,34 @@ function urlBase64ToUint8Array(base64: string) {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
 
+/**
+ * Subscribes this device. A stale subscription (old key, or a half-finished earlier attempt) makes the
+ * browser refuse with "push service error", so on failure it clears everything and tries once more.
+ */
+async function subscribe(key: string) {
+  const options = { userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) };
+  let reg = await navigator.serviceWorker.register("/sw.js");
+  await navigator.serviceWorker.ready;
+  try {
+    return (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe(options));
+  } catch {
+    await (await reg.pushManager.getSubscription())?.unsubscribe().catch(() => {});
+    await reg.unregister().catch(() => {});
+    reg = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+    return reg.pushManager.subscribe(options);
+  }
+}
+
+/** Plain-language reason, since browser push errors are cryptic. */
+function pushError(e: unknown) {
+  const msg = e instanceof Error ? e.message : "";
+  if (/push service|AbortError|not available/i.test(msg) || (e as { name?: string })?.name === "AbortError") {
+    return "Your browser could not reach its push service. Use Chrome (Android) or Safari from the Home Screen app (iPhone), turn off any VPN or ad blocker, and make sure the browser is allowed to show notifications in phone settings.";
+  }
+  return msg || "Could not turn on notifications";
+}
+
 type PushState = "unsupported" | "off" | "on" | "denied" | "loading";
 
 /** Turns phone / desktop push notifications on or off for this device. */
@@ -153,17 +181,13 @@ export function PushToggle({ compact }: { compact?: boolean }) {
         setState(permission === "denied" ? "denied" : "off");
         return;
       }
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const sub =
-        (await reg.pushManager.getSubscription()) ||
-        (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key!) }));
+      const sub = await subscribe(key!.trim());
       await api("/api/push", "POST", sub.toJSON());
       setState("on");
       notify("Notifications turned on for this device");
     } catch (e) {
       setState("off");
-      notify((e as Error).message || "Could not turn on notifications", "error");
+      notify(pushError(e), "error");
     }
   }
 
