@@ -4,6 +4,7 @@ import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS, createSession, homeFor, type Ro
 import { checkPassword, hashPassword } from "@/lib/password";
 import { dbConnect } from "@/lib/db";
 import { User } from "@/models/User";
+import { envAgent, recordLogin } from "@/lib/logins";
 
 function safeEqual(a: string, b: string) {
   const ab = Buffer.from(a);
@@ -49,11 +50,13 @@ export async function POST(req: Request) {
     await dbConnect();
     let user = await User.findOne({ email }).select("+passwordHash");
     const passwordOk = user?.status === "active" && (await checkPassword(password, user.passwordHash));
-    if (!passwordOk) user = await envAdmin(email, password);
+    if (!passwordOk) user = (await envAdmin(email, password)) || (await envAgent(email, password));
 
     if (!user) {
+      await recordLogin(req, { email, success: false });
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
+    await recordLogin(req, { user, email, success: true });
 
     user.lastLoginAt = new Date();
     await user.save();
@@ -65,6 +68,7 @@ export async function POST(req: Request) {
       name: user.name,
       email: user.email,
       cid: user.client ? String(user.client) : undefined,
+      sv: user.sessionVersion || 0,
     });
     const res = NextResponse.json({ ok: true, home: homeFor(role) });
     res.cookies.set(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS);

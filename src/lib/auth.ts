@@ -2,10 +2,13 @@ import { SignJWT, jwtVerify } from "jose";
 
 export const SESSION_COOKIE = "zx_session";
 
-export const ROLES = ["super_admin", "team_admin", "client"] as const;
+export const ROLES = ["agent", "super_admin", "team_admin", "client"] as const;
 export type Role = (typeof ROLES)[number];
 
-export type Session = { uid: string; role: Role; name: string; email: string; cid?: string };
+/** Roles a super admin may create or edit. The hidden "agent" (owner) account is never one of them. */
+export const MANAGED_ROLES = ["super_admin", "team_admin", "client"] as const;
+
+export type Session = { uid: string; role: Role; name: string; email: string; cid?: string; /** session version: bumped to force logout */ sv?: number };
 
 function secret() {
   return new TextEncoder().encode(process.env.AUTH_SECRET || "dev-only-secret-change-me-in-env-file");
@@ -33,7 +36,7 @@ export async function verifySession(token?: string | null): Promise<Session | nu
 
 /** Where each role lands after signing in. */
 export function homeFor(role: Role) {
-  return role === "client" ? "/portal" : role === "team_admin" ? "/today" : "/dashboard";
+  return role === "client" ? "/portal" : role === "team_admin" ? "/today" : role === "agent" ? "/agent" : "/dashboard";
 }
 
 export const SESSION_COOKIE_OPTIONS = {

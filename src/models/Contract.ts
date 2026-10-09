@@ -1,3 +1,5 @@
+// Must load before the schema below is compiled (recycle bin for deletions).
+import "@/lib/trash-plugin";
 import { Schema, model, models, type Model } from "mongoose";
 
 /** Agreement the client signs online by typing their name. Signature details are kept as proof. */

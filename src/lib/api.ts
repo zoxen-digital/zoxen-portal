@@ -20,16 +20,48 @@ export class HttpError extends Error {
   }
 }
 
+async function run<A extends unknown[]>(fn: (...args: A) => Promise<Response>, args: A) {
+  try {
+    return await fn(...args);
+  } catch (e) {
+    if (e instanceof HttpError) return error(e.message, e.status);
+    console.error(e);
+    const message = e instanceof Error ? e.message : "Something went wrong";
+    return error(message, 500);
+  }
+}
+
+/**
+ * Wraps every API route: turns thrown errors into JSON, and records each successful
+ * change (create / update / delete) in the audit log with who did it.
+ */
 export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response>) {
   return async (...args: A) => {
-    try {
-      return await fn(...args);
-    } catch (e) {
-      if (e instanceof HttpError) return error(e.message, e.status);
-      console.error(e);
-      const message = e instanceof Error ? e.message : "Something went wrong";
-      return error(message, 500);
+    const req = args[0] instanceof Request ? args[0] : null;
+    const path = req ? new URL(req.url).pathname : "";
+    const { shouldAudit } = await import("./audit");
+    if (!req || !shouldAudit(req.method, path)) return run(fn, args);
+
+    const { requestContext, newRequestId } = await import("./request-context");
+    const { currentUser } = await import("./session");
+    const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0]!.trim() || undefined;
+    const user = await currentUser().catch(() => null);
+    const ctx = { id: newRequestId(), ip, actor: user ? { id: user.id, name: user.name, role: user.role } : undefined };
+    const body = await req
+      .clone()
+      .json()
+      .catch(() => null);
+
+    const res = await requestContext.run(ctx, () => run(fn, args));
+    if (res.status < 400) {
+      const response = await res
+        .clone()
+        .json()
+        .catch(() => null);
+      const { writeAudit } = await import("./audit");
+      await writeAudit({ actor: ctx.actor, method: req.method, path, status: res.status, body, response, ip, batch: ctx.id });
     }
+    return res;
   };
 }
 

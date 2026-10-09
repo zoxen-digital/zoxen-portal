@@ -4,7 +4,7 @@ import { error, handle, json } from "@/lib/api";
 import { apiUser } from "@/lib/session";
 import { checkPassword, hashPassword, passwordProblem } from "@/lib/password";
 
-const ALL = ["super_admin", "team_admin", "client"] as const;
+const ALL = ["agent", "super_admin", "team_admin", "client"] as const;
 
 /** Change own name / phone, and optionally password (needs the current one). */
 export const PUT = handle(async (req: Request) => {

@@ -1,3 +1,5 @@
+// Must load before the schema below is compiled (recycle bin for deletions).
+import "@/lib/trash-plugin";
 import { Schema, model, models, type Model } from "mongoose";
 
 const PushSubSchema = new Schema(
@@ -9,7 +11,9 @@ const UserSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
-    role: { type: String, enum: ["super_admin", "team_admin", "client"], required: true, index: true },
+    role: { type: String, enum: ["agent", "super_admin", "team_admin", "client"], required: true, index: true },
+    // Bumped to sign the user out everywhere (force logout, disable, password change by the owner).
+    sessionVersion: { type: Number, default: 0 },
     // Only for role "client": the client company this login belongs to.
     client: { type: Schema.Types.ObjectId, ref: "Client", index: true },
     title: { type: String, trim: true },

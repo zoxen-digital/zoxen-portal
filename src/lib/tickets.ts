@@ -17,7 +17,7 @@ export function defaultDue(priority: string) {
 
 /** Tickets a user may see: owners all, team their own or their projects', clients their company's. */
 export async function ticketScope(user: CurrentUser): Promise<Record<string, unknown>> {
-  if (user.role === "super_admin") return {};
+  if (user.role === "super_admin" || user.role === "agent") return {};
   if (user.role === "client") return { client: new Types.ObjectId(user.clientId || "000000000000000000000000") };
   const projects = await Project.find({ team: user.id }).select("_id").lean();
   return { $or: [{ assignee: new Types.ObjectId(user.id) }, { project: { $in: projects.map((p) => p._id) } }] };

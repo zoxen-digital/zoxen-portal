@@ -3,7 +3,7 @@ import { User } from "@/models/User";
 import { error, handle, json } from "@/lib/api";
 import { apiUser } from "@/lib/session";
 
-const ALL = ["super_admin", "team_admin", "client"] as const;
+const ALL = ["agent", "super_admin", "team_admin", "client"] as const;
 
 /** Saves this browser/phone so it can receive push notifications. */
 export const POST = handle(async (req: Request) => {

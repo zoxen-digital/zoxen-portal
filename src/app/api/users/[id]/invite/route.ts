@@ -12,7 +12,7 @@ export const POST = handle(async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
   if (!validId(id)) return error("Invalid id", 404);
   await dbConnect();
-  const user = await User.findById(id).lean<{ status: string }>();
+  const user = await User.findOne({ _id: id, role: { $ne: "agent" } }).lean<{ status: string }>();
   if (!user) return error("User not found", 404);
   if (user.status === "disabled") return error("Enable this user first");
   return json(await issueInvite(id));

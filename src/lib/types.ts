@@ -141,7 +141,7 @@ export interface SettingsT {
   referralReward?: string;
 }
 
-export type RoleT = "super_admin" | "team_admin" | "client";
+export type RoleT = "agent" | "super_admin" | "team_admin" | "client";
 
 export interface UserT {
   _id: string;

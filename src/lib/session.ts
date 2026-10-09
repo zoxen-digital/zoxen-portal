@@ -18,16 +18,19 @@ export const currentUser = cache(async (): Promise<CurrentUser | null> => {
   const session = await verifySession(store.get(SESSION_COOKIE)?.value);
   if (!session) return null;
   await dbConnect();
-  const u = await User.findById(session.uid).select("name email role client status").lean<{
+  const u = await User.findById(session.uid).select("name email role client status sessionVersion").lean<{
     _id: unknown;
     name: string;
     email: string;
     role: Role;
     client?: unknown;
     status: string;
+    sessionVersion?: number;
   }>();
   // A role change also signs the user out, because the middleware routes by the role in the cookie.
   if (!u || u.status !== "active" || u.role !== session.role) return null;
+  // Forced logout: the cookie was issued before the last session reset.
+  if ((session.sv ?? 0) !== (u.sessionVersion ?? 0)) return null;
   return { id: String(u._id), role: u.role, name: u.name, email: u.email, clientId: u.client ? String(u.client) : undefined };
 });
 
@@ -49,3 +52,5 @@ export async function apiUser(roles: Role[]) {
 
 export const STAFF: Role[] = ["super_admin", "team_admin"];
 export const ADMIN: Role[] = ["super_admin"];
+export const AGENT: Role[] = ["agent"];
+export const EVERYONE: Role[] = ["agent", "super_admin", "team_admin", "client"];

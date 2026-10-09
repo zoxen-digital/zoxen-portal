@@ -8,6 +8,8 @@ import { Meeting } from "@/models/Meeting";
 import { Project } from "@/models/Project";
 import { Quote } from "@/models/Quote";
 import { User } from "@/models/User";
+import { AuditLog } from "@/models/AuditLog";
+import { LoginEvent } from "@/models/LoginEvent";
 
 const DAY = 86_400_000;
 const SYSTEM = { name: "Automatic reminder", role: "system" };
@@ -115,6 +117,35 @@ async function staffDigest() {
   return sent;
 }
 
+/** Morning summary for the owner: who did what in the last 24 hours, deletions and security events. */
+async function ownerSummary() {
+  const owners = await User.find({ role: "agent", status: "active" }).select("_id").lean();
+  if (!owners.length) return 0;
+  const since = new Date(Date.now() - 86_400_000);
+  const [byPerson, deletes, failed, newDevices] = await Promise.all([
+    AuditLog.aggregate([
+      { $match: { at: { $gte: since }, actorRole: { $in: ["super_admin", "team_admin"] } } },
+      { $group: { _id: "$actorName", n: { $sum: 1 } } },
+      { $sort: { n: -1 } },
+    ]),
+    AuditLog.countDocuments({ at: { $gte: since }, method: "DELETE" }),
+    LoginEvent.countDocuments({ at: { $gte: since }, success: false }),
+    LoginEvent.countDocuments({ at: { $gte: since }, newDevice: true }),
+  ]);
+  const people = byPerson.map((p: { _id: string; n: number }) => `${p._id} (${p.n})`).join(", ");
+  const body = [
+    byPerson.length ? `Activity: ${people}.` : "No admin or team activity.",
+    `${deletes} deletion${deletes === 1 ? "" : "s"}`,
+    `${failed} failed sign-in${failed === 1 ? "" : "s"}`,
+    `${newDevices} new device${newDevices === 1 ? "" : "s"}`,
+  ].join(" · ");
+  await notify(
+    owners.map((o) => String(o._id)),
+    { title: "Daily summary: last 24 hours", body, link: "/agent/audit", email: { button: "Open audit log" } }
+  );
+  return 1;
+}
+
 /** Everything the daily job does. Each part is isolated so one failure does not stop the rest. */
 export async function runDailyJobs() {
   await dbConnect();
@@ -126,6 +157,7 @@ export async function runDailyJobs() {
     ["meetingReminders", upcomingMeetings],
     ["expiredQuotes", expireQuotes],
     ["staffDigests", staffDigest],
+    ["ownerSummary", ownerSummary],
   ];
   for (const [name, job] of jobs) {
     try {

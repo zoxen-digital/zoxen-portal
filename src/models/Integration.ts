@@ -1,3 +1,5 @@
+// Must load before the schema below is compiled (recycle bin for deletions).
+import "@/lib/trash-plugin";
 import { Schema, model, models, type Model } from "mongoose";
 
 /** Third-party connections (Google Calendar). Server only: never sent to the browser. */

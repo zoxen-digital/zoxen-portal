@@ -25,7 +25,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   const filter =
     sp.status === "Team" ? { role: { $in: ["super_admin", "team_admin"] } } : sp.status === "Clients" ? { role: "client" } : {};
   const [docs, clientDocs, teamCount, clientCount] = await Promise.all([
-    User.find(filter).sort({ role: -1, name: 1 }).populate("client", "name company").lean(),
+    User.find({ ...filter, role: (filter as { role?: unknown }).role ?? { $ne: "agent" } }).sort({ role: -1, name: 1 }).populate("client", "name company").lean(),
     Client.find().sort({ name: 1 }).select("name company").lean(),
     User.countDocuments({ role: { $in: ["super_admin", "team_admin"] } }),
     User.countDocuments({ role: "client" }),

@@ -21,10 +21,15 @@ const PUBLIC_PREFIXES = [
 // Paths every signed-in user may open, whatever the role.
 const SHARED = ["/api/auth/", "/api/notifications", "/api/push", "/api/account", "/api/live"];
 
-// Super admin may open everything except the client portal.
+// Owner-only area: not even super admins may open it.
+const AGENT_ONLY = ["/agent", "/api/agent"];
+
+// Super admin may open everything except the client portal and the owner area.
 const ALLOWED: Record<Exclude<Role, "super_admin">, string[]> = {
   team_admin: ["/today", "/projects", "/api/projects", "/tickets", "/api/tickets", "/queries", "/api/queries", "/submissions", "/api/onboarding", "/account"],
   client: ["/portal", "/api/portal"],
+  // The hidden owner account: its own pages, read-only reports, and its profile.
+  agent: ["/agent", "/api/agent", "/reports", "/account"],
 };
 
 function matches(pathname: string, prefixes: string[]) {
@@ -47,7 +52,7 @@ export async function middleware(req: NextRequest) {
   const role = session.role;
   const allowed =
     matches(pathname, SHARED) ||
-    (role === "super_admin" ? !matches(pathname, ALLOWED.client) : matches(pathname, ALLOWED[role]));
+    (role === "super_admin" ? !matches(pathname, ALLOWED.client) && !matches(pathname, AGENT_ONLY) : matches(pathname, ALLOWED[role]));
   if (allowed) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) return NextResponse.json({ error: "You do not have access to this" }, { status: 403 });

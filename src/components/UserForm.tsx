@@ -14,6 +14,7 @@ import type { ClientOption } from "./QueryForm";
 type Invite = { link: string; emailed: boolean };
 
 const ROLE_HELP: Record<RoleT, string> = {
+  agent: "",
   super_admin: "Full access, including invoices, revenue, reports, settings and users.",
   team_admin: "Sees only the projects and queries assigned to them. No invoices, revenue or settings.",
   client: "Client portal only: their own projects, approvals, revisions, documents and invoices.",

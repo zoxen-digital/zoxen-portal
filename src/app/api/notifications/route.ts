@@ -3,7 +3,7 @@ import { Notification } from "@/models/Notification";
 import { handle, json, validId } from "@/lib/api";
 import { apiUser } from "@/lib/session";
 
-const ALL = ["super_admin", "team_admin", "client"] as const;
+const ALL = ["agent", "super_admin", "team_admin", "client"] as const;
 
 export const GET = handle(async () => {
   const user = await apiUser([...ALL]);

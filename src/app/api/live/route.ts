@@ -16,12 +16,15 @@ import { Quote } from "@/models/Quote";
 import { Contract } from "@/models/Contract";
 import { RecurringPlan } from "@/models/RecurringPlan";
 import { ticketScope } from "@/lib/tickets";
+import { AuditLog } from "@/models/AuditLog";
+import { LoginEvent } from "@/models/LoginEvent";
+import { TrashItem } from "@/models/TrashItem";
 import type { Model } from "mongoose";
 
 /** Time of the newest change in a collection the user can see (0 if none). */
-async function latest(model: Model<unknown>, filter: Record<string, unknown> = {}) {
-  const doc = await model.findOne(filter).sort({ updatedAt: -1 }).select("updatedAt").lean<{ updatedAt?: Date }>();
-  return doc?.updatedAt ? new Date(doc.updatedAt).getTime() : 0;
+async function latest(model: Model<unknown>, filter: Record<string, unknown> = {}, field = "updatedAt") {
+  const doc = await model.findOne(filter).sort({ [field]: -1 }).select(field).lean<Record<string, Date | undefined>>();
+  return doc?.[field] ? new Date(doc[field]!).getTime() : 0;
 }
 
 /**
@@ -29,13 +32,15 @@ async function latest(model: Model<unknown>, filter: Record<string, unknown> = {
  * so updates appear without a manual refresh and without reloading whole pages every few seconds.
  */
 export const GET = handle(async () => {
-  const user = await apiUser(["super_admin", "team_admin", "client"]);
+  const user = await apiUser(["agent", "super_admin", "team_admin", "client"]);
   await dbConnect();
   const me = new Types.ObjectId(user.id);
   const scope = projectScope(user);
 
   const parts: Promise<number>[] = [latest(Notification as Model<unknown>, { user: me }), latest(Project as Model<unknown>, scope)];
-  if (user.role === "super_admin") {
+  if (user.role === "agent") {
+    for (const m of [Invoice, AuditLog, LoginEvent, TrashItem, Project, Ticket]) parts.push(latest(m as Model<unknown>, {}, m === AuditLog || m === LoginEvent ? "at" : m === TrashItem ? "deletedAt" : "updatedAt"));
+  } else if (user.role === "super_admin") {
     for (const m of [Invoice, Meeting, Query, Client, Onboarding, Activity, Ticket, Quote, Contract, RecurringPlan]) parts.push(latest(m as Model<unknown>));
   } else if (user.role === "team_admin") {
     parts.push(

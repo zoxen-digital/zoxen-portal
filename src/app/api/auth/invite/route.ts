@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       name: user.name,
       email: user.email,
       cid: user.client ? String(user.client) : undefined,
+      sv: user.sessionVersion || 0,
     });
     const res = NextResponse.json({ ok: true, home: homeFor(role) });
     res.cookies.set(SESSION_COOKIE, session, SESSION_COOKIE_OPTIONS);

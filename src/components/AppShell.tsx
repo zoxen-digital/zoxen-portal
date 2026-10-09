@@ -15,6 +15,9 @@ import {
   Package,
   MessageSquareQuote,
   Gift,
+  ScrollText,
+  ShieldCheck,
+  Trash2,
   UserCog,
   type LucideIcon,
   ChevronDown,
@@ -55,12 +58,18 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] =
   { href: "/packages", label: "Packages", icon: Package, roles: ["super_admin"] },
   { href: "/reviews", label: "Client Reviews", icon: MessageSquareQuote, roles: ["super_admin"] },
   { href: "/referrals", label: "Referrals", icon: Gift, roles: ["super_admin"] },
-  { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin"] },
+  { href: "/agent", label: "My Day", icon: Sun, roles: ["agent"] },
+  { href: "/agent/invoices", label: "Invoices", icon: FileText, roles: ["agent"] },
+  { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "agent"] },
+  { href: "/agent/users", label: "Admins & Team", icon: UserCog, roles: ["agent"] },
+  { href: "/agent/audit", label: "Audit Log", icon: ScrollText, roles: ["agent"] },
+  { href: "/agent/logins", label: "Login History", icon: ShieldCheck, roles: ["agent"] },
+  { href: "/agent/trash", label: "Recycle Bin", icon: Trash2, roles: ["agent"] },
   { href: "/users", label: "Team & Portal Users", icon: UserCog, roles: ["super_admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
 ];
 
-const ROLE_LABEL: Record<RoleT, string> = { super_admin: "Super Admin", team_admin: "Team", client: "Client" };
+const ROLE_LABEL: Record<RoleT, string> = { agent: "Owner", super_admin: "Super Admin", team_admin: "Team", client: "Client" };
 
 export function AppShell({
   children,
@@ -77,7 +86,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const nav = NAV.filter((n) => n.roles.includes(role));
-  const home = role === "super_admin" ? "/dashboard" : "/today";
+  const home = role === "super_admin" ? "/dashboard" : role === "agent" ? "/agent" : "/today";
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -118,7 +127,7 @@ export function AppShell({
 
         <nav className={cn("mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pb-2", mini ? "px-2" : "px-4")}>
           {nav.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            const active = item.href === "/agent" ? pathname === "/agent" : pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
               <Link

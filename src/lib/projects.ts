@@ -11,7 +11,7 @@ import { User } from "@/models/User";
 
 /** Mongo filter for the projects a user may see. ObjectIds, so it also works inside aggregate $match. */
 export function projectScope(user: CurrentUser): Record<string, unknown> {
-  if (user.role === "super_admin") return {};
+  if (user.role === "super_admin" || user.role === "agent") return {};
   if (user.role === "team_admin") return { team: new Types.ObjectId(user.id) };
   return { client: new Types.ObjectId(user.clientId || "000000000000000000000000") };
 }

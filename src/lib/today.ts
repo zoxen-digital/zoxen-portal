@@ -41,7 +41,7 @@ function bounds() {
 export async function today(user: CurrentUser): Promise<TodayData> {
   await dbConnect();
   const { start, end } = bounds();
-  const owner = user.role === "super_admin";
+  const owner = user.role === "super_admin" || user.role === "agent";
   const scope = projectScope(user);
   const out: TodayData = { overdue: [], dueToday: [], waitingOnTeam: [], waitingOnClient: [], meetings: [], blocked: [] };
 

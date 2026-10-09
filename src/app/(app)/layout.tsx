@@ -6,7 +6,7 @@ import { Onboarding } from "@/models/Onboarding";
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await pageUser(STAFF);
+  const user = await pageUser([...STAFF, "agent"]);
   let newSubmissions = 0;
   {
     try {
