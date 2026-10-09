@@ -15,6 +15,7 @@ const PUBLIC_PREFIXES = [
   "/api/public/",
   "/api/onboarding/submit",
   "/sw.js",
+  "/icons/",
   "/manifest.webmanifest",
 ];
 

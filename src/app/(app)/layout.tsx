@@ -1,3 +1,4 @@
+import { InstallApp } from "@/components/InstallApp";
 import { AppShell } from "@/components/AppShell";
 import { dbConnect } from "@/lib/db";
 import { STAFF, pageUser } from "@/lib/session";
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <AppShell userName={user.name} userEmail={user.email} role={user.role} newSubmissions={newSubmissions}>
       {children}
+      <InstallApp />
     </AppShell>
   );
 }

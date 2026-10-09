@@ -1,3 +1,4 @@
+import { InstallApp } from "@/components/InstallApp";
 import { PortalShell } from "@/components/PortalShell";
 import { pageUser } from "@/lib/session";
 import { Client } from "@/models/Client";
@@ -11,6 +12,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <PortalShell userName={user.name} company={client?.company || client?.name || ""}>
       {children}
+      <InstallApp />
     </PortalShell>
   );
 }
