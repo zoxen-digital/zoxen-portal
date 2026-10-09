@@ -6,11 +6,20 @@ import { Download, Share, X } from "lucide-react";
 type PromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
 const HIDE_KEY = "zx-install-hidden";
+const SNOOZE_DAYS = 7;
+
+function hiddenNow() {
+  try {
+    return Number(localStorage.getItem(HIDE_KEY) || 0) > Date.now();
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Registers the service worker and offers "Install app".
  * Android/desktop Chrome: real install prompt. iPhone Safari: short Share → Add to Home Screen steps.
- * Hidden when already installed, and for 14 days after the user closes it.
+ * Phones and tablets only. Hidden when already installed, and for 7 days after the user closes it.
  */
 export function InstallApp() {
   const [prompt, setPrompt] = useState<PromptEvent | null>(null);
@@ -22,10 +31,9 @@ export function InstallApp() {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
     const installed = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone;
     if (installed) return;
-    try {
-      const until = Number(localStorage.getItem(HIDE_KEY) || 0);
-      if (until > Date.now()) return;
-    } catch {}
+    // Phones and tablets only; on desktop the browser's own install icon is enough.
+    if (!window.matchMedia("(pointer: coarse)").matches || window.innerWidth >= 1024) return;
+    if (hiddenNow()) return;
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios/i.test(navigator.userAgent);
     if (isIos) {
       setIos(true);
@@ -34,7 +42,8 @@ export function InstallApp() {
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setPrompt(e as PromptEvent);
-      setShow(true);
+      // Chrome fires this again on every page; respect "closed" until the snooze ends.
+      if (!hiddenNow()) setShow(true);
     };
     const onInstalled = () => setShow(false);
     window.addEventListener("beforeinstallprompt", onPrompt);
@@ -48,7 +57,7 @@ export function InstallApp() {
   function hide() {
     setShow(false);
     try {
-      localStorage.setItem(HIDE_KEY, String(Date.now() + 14 * 86_400_000));
+      localStorage.setItem(HIDE_KEY, String(Date.now() + SNOOZE_DAYS * 86_400_000));
     } catch {}
   }
 
