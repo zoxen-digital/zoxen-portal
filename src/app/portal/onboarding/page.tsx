@@ -3,6 +3,7 @@ import { ClipboardList, ExternalLink } from "lucide-react";
 import { dbConnect } from "@/lib/db";
 import { pageUser } from "@/lib/session";
 import { clientFormToken } from "@/lib/onboarding";
+import { onboardingOpen } from "@/lib/onboarding-access";
 import { Onboarding } from "@/models/Onboarding";
 import { Badge } from "@/components/ui";
 import { OnboardingDetails } from "@/components/OnboardingDetails";
@@ -11,16 +12,16 @@ import type { OnboardingT } from "@/lib/types";
 
 export const metadata = { title: "Onboarding" };
 
-/** The client's own onboarding answers (and the link to fill the form if they have not yet). */
+/**
+ * The client's onboarding answers. Before anything is submitted the page stays empty until the first
+ * invoice is paid; then it offers the form. Once submitted, only the answers show (no second form).
+ */
 export default async function PortalOnboarding() {
   const user = await pageUser(["client"]);
   await dbConnect();
-  const [docs, token] = await Promise.all([
-    Onboarding.find({ client: user.clientId }).sort({ createdAt: -1 }).lean(),
-    clientFormToken(user.clientId!),
-  ]);
+  const [docs, open] = await Promise.all([Onboarding.find({ client: user.clientId }).sort({ createdAt: -1 }).lean(), onboardingOpen(user.clientId!)]);
   const forms = serialize<OnboardingT[]>(docs);
-  const formLink = `/onboarding/${token}`;
+  const formLink = !forms.length && open ? `/onboarding/${await clientFormToken(user.clientId!)}` : "";
 
   return (
     <div className="space-y-6">
@@ -29,12 +30,20 @@ export default async function PortalOnboarding() {
           <h1 className="text-2xl font-bold tracking-tight text-heading sm:text-[28px]">Onboarding</h1>
           <p className="mt-1 text-sm text-muted">The business details, goals and preferences you shared with us.</p>
         </div>
-        <Link href={formLink} target="_blank" className="btn btn-primary">
-          <ExternalLink className="h-4 w-4" /> {forms.length ? "Submit another form" : "Fill the onboarding form"}
-        </Link>
+        {formLink && (
+          <Link href={formLink} target="_blank" className="btn btn-primary">
+            <ExternalLink className="h-4 w-4" /> Fill the onboarding form
+          </Link>
+        )}
       </div>
 
-      {forms.length === 0 ? (
+      {forms.length === 0 && !formLink ? (
+        <div className="card flex flex-col items-center gap-3 p-10 text-center">
+          <ClipboardList className="h-10 w-10 text-muted opacity-50" />
+          <h2 className="text-lg font-bold text-heading">Nothing here yet</h2>
+          <p className="max-w-md text-sm text-muted">Your onboarding form will appear here after your first payment. We will also send you the link in chat.</p>
+        </div>
+      ) : forms.length === 0 ? (
         <div className="card flex flex-col items-center gap-3 p-10 text-center">
           <ClipboardList className="h-10 w-10 text-brand dark:text-[#8f9bff]" />
           <h2 className="text-lg font-bold text-heading">Tell us about your project</h2>

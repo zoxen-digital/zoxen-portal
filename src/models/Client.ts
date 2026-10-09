@@ -15,6 +15,8 @@ const ClientSchema = new Schema(
     notes: { type: String },
     // Secret part of this client personal onboarding form link (/onboarding/<token>).
     onboardingToken: { type: String, unique: true, sparse: true },
+    /** Set when the first invoice is fully paid: the client can then fill the onboarding form in the portal. */
+    onboardingUnlockedAt: { type: Date, default: null },
     // Half-filled onboarding form from their personal link, so they can continue on any device.
     onboardingDraft: { data: Schema.Types.Mixed, savedAt: Date },
     // Code in this client referral link (/onboarding?ref=<code>).

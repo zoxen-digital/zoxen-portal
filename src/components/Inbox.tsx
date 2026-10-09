@@ -11,6 +11,7 @@ import { AttachmentList, AttachmentPicker } from "./FileUpload";
 import { useDialogs } from "./Dialogs";
 import type { AttachmentT } from "@/lib/types";
 import { useFillHeight } from "./useFillHeight";
+import { Linkify } from "./Linkify";
 
 type Row = {
   client: string;
@@ -86,7 +87,12 @@ function usePoll(fn: () => void, ms: number) {
 /** Highlights @Name mentions of team members inside a message. */
 function Body({ text, staff, light }: { text: string; staff: Staff[]; light?: boolean }) {
   const names = staff.map((s) => s.name).sort((a, b) => b.length - a.length);
-  if (!names.length || !text.includes("@")) return <p className="whitespace-pre-wrap break-words">{text}</p>;
+  if (!names.length || !text.includes("@"))
+    return (
+      <p className="whitespace-pre-wrap break-words">
+        <Linkify text={text} light={light} />
+      </p>
+    );
   const rx = new RegExp(`(@(?:${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}))`, "g");
   return (
     <p className="whitespace-pre-wrap break-words">
@@ -96,7 +102,7 @@ function Body({ text, staff, light }: { text: string; staff: Staff[]; light?: bo
             {part}
           </span>
         ) : (
-          <span key={i}>{part}</span>
+          <Linkify key={i} text={part} light={light} />
         )
       )}
     </p>

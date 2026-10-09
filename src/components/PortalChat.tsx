@@ -10,6 +10,7 @@ import { AttachmentList, AttachmentPicker } from "./FileUpload";
 import { useDialogs } from "./Dialogs";
 import type { AttachmentT } from "@/lib/types";
 import { useFillHeight } from "./useFillHeight";
+import { Linkify } from "./Linkify";
 
 type Msg = { _id: string; authorName: string; authorRole: string; body: string; attachments: AttachmentT[]; createdAt: string };
 
@@ -122,7 +123,11 @@ export function PortalChat({ companyName }: { companyName: string }) {
                     )}
                   >
                     {!mine && <div className="mb-0.5 text-[11px] font-semibold text-brand dark:text-[#8f9bff]">{companyName}</div>}
-                    {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
+                    {m.body && (
+                      <p className="whitespace-pre-wrap break-words">
+                        <Linkify text={m.body} light={mine} />
+                      </p>
+                    )}
                     <AttachmentList items={m.attachments} light={mine} />
                     <div className={cn("mt-1 text-right text-[10px]", mine ? "text-white/70" : "text-muted")}>
                       {new Date(m.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}

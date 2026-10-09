@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { error, handle, json, validId } from "@/lib/api";
 import { applyTotals } from "@/lib/invoices";
+import { unlockOnboardingIfPaid } from "@/lib/onboarding-unlock";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,6 +31,7 @@ export const POST = handle(async (req: Request, { params }: Ctx) => {
   applyTotals(invoice);
   await invoice.save();
   await notifyClient(String(invoice.client), paymentReceivedMessage(invoice, amount), user);
+  await unlockOnboardingIfPaid(invoice, user);
   return json(invoice);
 });
 

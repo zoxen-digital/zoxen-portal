@@ -10,6 +10,7 @@ import { Activity } from "@/models/Activity";
 import { Quote } from "@/models/Quote";
 import { Contract } from "@/models/Contract";
 import { Onboarding } from "@/models/Onboarding";
+import { onboardingOpen } from "@/lib/onboarding-access";
 import { ClipboardList } from "lucide-react";
 import { Badge, EmptyState } from "@/components/ui";
 import { ProgressBar } from "@/components/ProjectForm";
@@ -36,7 +37,7 @@ export default async function PortalHome() {
     Onboarding.countDocuments({ client: scope.client }),
   ]);
   // New clients without a project or form yet are asked to fill the onboarding form first.
-  const needsForm = formCount === 0 && projectDocs.length === 0;
+  const needsForm = formCount === 0 && (await onboardingOpen(String(scope.client)));
   const now = Date.now();
   const quotesToAccept = openQuotes.filter((q) => !q.validUntil || new Date(q.validUntil).getTime() + 86_400_000 > now);
 

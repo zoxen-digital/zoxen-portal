@@ -5,6 +5,7 @@ import { Invoice } from "@/models/Invoice";
 import { Client } from "@/models/Client";
 import { error, handle, json, validId } from "@/lib/api";
 import { applyTotals, clientSnapshot, normalizeInvoiceBody } from "@/lib/invoices";
+import { unlockOnboardingIfPaid } from "@/lib/onboarding-unlock";
 import { INVOICE_STATUSES } from "@/lib/constants";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -44,6 +45,7 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
   }
   await invoice.save();
   if (wasDraft && invoice.status !== "Draft") await notifyClient(String(invoice.client), invoiceIssuedMessage(invoice), user);
+  await unlockOnboardingIfPaid(invoice, user);
   return json(invoice);
 });
 
