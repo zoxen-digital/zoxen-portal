@@ -83,7 +83,7 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="card absolute right-0 z-30 mt-2 w-[min(92vw,380px)] overflow-hidden shadow-xl">
+        <div className="card fixed inset-x-3 top-[76px] z-30 overflow-hidden shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[380px]">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="font-bold text-heading">Notifications</div>
             {unread > 0 && (

@@ -180,7 +180,7 @@ export async function sendChatMessage(
   const preview = body ? body.slice(0, 140) : `${attachments.length} file${attachments.length > 1 ? "s" : ""} attached`;
 
   if (isClient) {
-    await notify(await teamToAlert(clientId, conv), { title: `${clientLabel}: new message`, body: preview, link: `/inbox?c=${clientId}` });
+    await notify(await teamToAlert(clientId, conv), { title: `${clientLabel}: new message`, body: preview, link: `/inbox?c=${clientId}`, history: false });
   } else {
     if (mentions.length) {
       await notify(mentions, { title: `${user.name} mentioned you in ${clientLabel} chat`, body: preview, link: `/inbox?c=${clientId}`, email: { button: "Open chat" } });
@@ -193,6 +193,7 @@ export async function sendChatMessage(
         body: preview,
         link: "/portal/chat",
         email: quiet ? undefined : { button: "Reply" },
+        history: false,
       });
     }
   }

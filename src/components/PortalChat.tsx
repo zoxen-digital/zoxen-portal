@@ -9,6 +9,7 @@ import { LogoMark } from "./Logo";
 import { AttachmentList, AttachmentPicker } from "./FileUpload";
 import { useDialogs } from "./Dialogs";
 import type { AttachmentT } from "@/lib/types";
+import { useFillHeight } from "./useFillHeight";
 
 type Msg = { _id: string; authorName: string; authorRole: string; body: string; attachments: AttachmentT[]; createdAt: string };
 
@@ -29,6 +30,7 @@ export function PortalChat({ companyName }: { companyName: string }) {
   const [files, setFiles] = useState<AttachmentT[]>([]);
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const box = useFillHeight<HTMLDivElement>();
   const count = useRef(0);
 
   const load = useCallback(async () => {
@@ -76,7 +78,7 @@ export function PortalChat({ companyName }: { companyName: string }) {
 
   let lastDay = "";
   return (
-    <div className="card flex h-[calc(100dvh-10.5rem)] min-h-[420px] flex-col overflow-hidden lg:h-[calc(100dvh-7.5rem)]">
+    <div ref={box} className="flex flex-col overflow-hidden bg-surface">
       <header className="flex items-center gap-3 border-b border-line p-3 sm:p-4">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-navy">
           <LogoMark className="h-6 w-auto" id="zx-chat" />

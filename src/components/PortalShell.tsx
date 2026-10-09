@@ -142,11 +142,11 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
           </div>
         </header>
 
-        <main className={cn("mx-auto max-w-6xl px-4 sm:px-6", onChat ? "pb-20 pt-3 lg:pb-6 lg:pt-6" : "pb-28 pt-6 lg:pb-16")}>{children}</main>
+        <main className={cn("mx-auto max-w-6xl px-4 sm:px-6", onChat ? "max-w-none !px-0" : "pb-28 pt-6 lg:pb-16")}>{children}</main>
       </div>
 
       {/* Phones & tablets: app-style bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+      <nav data-bottom-nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5">
           {NAV.filter((n) => TABS.includes(n.href)).map((n) => {
             const active = isActive(n);

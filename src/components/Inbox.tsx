@@ -10,6 +10,7 @@ import { Avatar } from "./ui";
 import { AttachmentList, AttachmentPicker } from "./FileUpload";
 import { useDialogs } from "./Dialogs";
 import type { AttachmentT } from "@/lib/types";
+import { useFillHeight } from "./useFillHeight";
 
 type Row = {
   client: string;
@@ -127,10 +128,11 @@ export function Inbox({ meId, canStart }: { meId: string; canStart: boolean }) {
   }, [loadList, q]);
   usePoll(loadList, 6000);
 
+  const box = useFillHeight<HTMLDivElement>();
   const open = (id: string) => router.push(id ? `/inbox?c=${id}` : "/inbox", { scroll: false });
 
   return (
-    <div className="card flex h-[calc(100dvh-8.5rem)] min-h-[480px] overflow-hidden">
+    <div ref={box} className="-mx-4 -mb-12 -mt-6 flex overflow-hidden border-t border-line bg-surface sm:-mx-6 lg:-mx-8">
       {/* Chat list */}
       <aside className={cn("w-full shrink-0 flex-col border-r border-line md:w-[340px] lg:w-[370px]", active ? "hidden md:flex" : "flex")}>
         <div className="space-y-3 border-b border-line p-3">

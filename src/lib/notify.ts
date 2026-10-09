@@ -22,6 +22,8 @@ type Message = {
   link?: string;
   /** Also send a branded email. Use for things the person must act on. */
   email?: { subject?: string; button?: string };
+  /** false = phone/browser alert only, not kept in the bell list (plain chat messages; the chat itself is the record). */
+  history?: boolean;
 };
 
 type PushSub = { endpoint: string; keys: { p256dh: string; auth: string } };
@@ -40,7 +42,7 @@ export async function notify(userIds: (string | { toString(): string })[], m: Me
       .lean<{ _id: unknown; email: string; name: string; status: string; pushSubscriptions?: PushSub[] }[]>();
     if (!users.length) return;
 
-    await Notification.insertMany(users.map((u) => ({ user: u._id, title: m.title, body: m.body, link: m.link })));
+    if (m.history !== false) await Notification.insertMany(users.map((u) => ({ user: u._id, title: m.title, body: m.body, link: m.link })));
 
     const jobs: Promise<unknown>[] = [];
     if (pushEnabled()) {

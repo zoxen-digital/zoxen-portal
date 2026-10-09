@@ -78,6 +78,7 @@ export async function postMessage(
         title: `${user.name} on ${label}`,
         body: preview,
         link: thread.kind === "project" ? `/projects/${doc._id}#chat` : `/tickets/${doc._id}`,
+        history: thread.kind !== "project",
       }
     );
   } else {
@@ -87,6 +88,7 @@ export async function postMessage(
       body: `${user.name}: ${preview}`,
       link: thread.kind === "project" ? `/portal/projects/${doc._id}#chat` : `/portal/tickets/${doc._id}`,
       email: quiet ? undefined : { button: "Reply" },
+      history: thread.kind !== "project",
     });
   }
   return message;
