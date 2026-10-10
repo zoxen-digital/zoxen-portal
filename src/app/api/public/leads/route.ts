@@ -2,14 +2,13 @@ import { timingSafeEqual } from "crypto";
 import { dbConnect } from "@/lib/db";
 import { error, json } from "@/lib/api";
 import { notify, superAdminIds } from "@/lib/notify";
-import { Client } from "@/models/Client";
 import { Query } from "@/models/Query";
 
 /**
  * Website contact form -> Queries.
  * POST JSON or form data with header `x-api-key: ONBOARDING_API_KEY` (same key the website already uses).
  * Fields: name*, email or phone*, company, service, message, budget, source, page.
- * Finds the client by email (or phone), creates one if new, then adds a Pending query and alerts super admins.
+ * Saves a Pending query with the lead's contact details (no client is created; the team links one later) and alerts super admins.
  */
 
 function cors(): HeadersInit {
@@ -22,7 +21,7 @@ function cors(): HeadersInit {
 
 function keyMatches(given: string | null) {
   const expected = process.env.ONBOARDING_API_KEY;
-  // Unlike the onboarding endpoint, leads always need the key: this one creates clients.
+  // Unlike the onboarding endpoint, leads always need the key, so nobody can flood the Queries list.
   if (!expected || !given) return false;
   const a = Buffer.from(given);
   const b = Buffer.from(expected);
@@ -68,39 +67,24 @@ export async function POST(req: Request) {
 
   try {
     await dbConnect();
-    let client = email ? await Client.findOne({ email }) : null;
-    if (!client && phone) client = await Client.findOne({ phone });
-    const isNew = !client;
-    if (!client) {
-      client = await Client.create({ name, company, email: email || undefined, phone, source, status: "Onboarding", notes: "Created from a website enquiry." });
-    }
-
     // Same person sending the same message twice in 10 minutes (double click, refresh): keep one.
-    const dup = await Query.findOne({ client: client._id, description: message, createdAt: { $gte: new Date(Date.now() - 10 * 60_000) } }).select("_id");
+    const who = email ? { "lead.email": email } : { "lead.phone": phone };
+    const dup = await Query.findOne({ ...who, description: message, createdAt: { $gte: new Date(Date.now() - 10 * 60_000) } }).select("_id");
     if (dup) return json({ ok: true, id: dup._id }, 200, headers);
 
     const query = await Query.create({
-      client: client._id,
+      client: null,
+      lead: { name, email, phone, company, budget, source, page },
       title: `Website enquiry${service ? `: ${service}` : ""}`,
       service,
       description: message,
       status: "Pending",
       priority: "Medium",
-      notes: [
-        `From ${source}${page ? ` (${page})` : ""}`,
-        `Name: ${name}`,
-        email && `Email: ${email}`,
-        phone && `Phone: ${phone}`,
-        company && `Company: ${company}`,
-        budget && `Budget: ${budget}`,
-      ]
-        .filter(Boolean)
-        .join("\n"),
     });
 
     await notify(await superAdminIds(), {
       title: `New website enquiry: ${company || name}`,
-      body: `${service ? `${service} · ` : ""}${message.slice(0, 120) || "No message"}${isNew ? " (new client)" : ""}`,
+      body: `${service ? `${service} · ` : ""}${message.slice(0, 120) || "No message"}`,
       link: "/queries",
       email: { button: "Open queries" },
     });

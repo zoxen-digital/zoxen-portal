@@ -4,7 +4,18 @@ import { Schema, model, models, type Model } from "mongoose";
 
 const QuerySchema = new Schema(
   {
-    client: { type: Schema.Types.ObjectId, ref: "Client", required: true, index: true },
+    /** Empty for website leads until the team links or creates a client. */
+    client: { type: Schema.Types.ObjectId, ref: "Client", default: null, index: true },
+    /** Contact details of a website lead (no client yet). */
+    lead: {
+      name: String,
+      email: String,
+      phone: String,
+      company: String,
+      budget: String,
+      source: String,
+      page: String,
+    },
     title: { type: String, required: true, trim: true },
     service: { type: String, trim: true },
     description: { type: String },

@@ -187,9 +187,9 @@ export default async function DashboardPage() {
                       <tr key={q._id}>
                         <td>
                           <Link href={c ? `/clients/${c._id}` : "/queries"} className="flex items-center gap-3">
-                            <Avatar name={c?.name} />
+                            <Avatar name={c?.name || q.lead?.name} />
                             <div className="min-w-0">
-                              <div className="truncate font-semibold text-heading">{c?.name || "Deleted client"}</div>
+                              <div className="truncate font-semibold text-heading">{c?.name || (q.lead?.name ? `${q.lead.company || q.lead.name} (lead)` : "Deleted client")}</div>
                               <div className="truncate text-xs text-muted">{c?.company || c?.website}</div>
                             </div>
                           </Link>

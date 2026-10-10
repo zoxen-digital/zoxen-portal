@@ -88,7 +88,7 @@ export async function today(user: CurrentUser): Promise<TodayData> {
   }
 
   for (const q of queries) {
-    bucket(q.dueDate, { key: `q${q._id}`, kind: "Query", title: q.title, sub: `${who(q.client)}${q.assignedTo ? ` · ${q.assignedTo}` : ""}`, href: "/queries" });
+    bucket(q.dueDate, { key: `q${q._id}`, kind: "Query", title: q.title, sub: `${q.client ? who(q.client) : q.lead?.name ? `${q.lead.company || q.lead.name} (lead)` : "Client"}${q.assignedTo ? ` · ${q.assignedTo}` : ""}`, href: "/queries" });
   }
 
   // Client messages with no team reply after them.

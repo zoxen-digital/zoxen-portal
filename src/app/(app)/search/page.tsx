@@ -75,7 +75,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                     <div className="flex-1">
                       <div className="font-semibold text-heading">{qq.title}</div>
                       <div className="text-xs text-muted">
-                        {c?.name} · {qq.service} {qq.assignedTo ? `· ${qq.assignedTo}` : ""}
+                        {c?.name || (qq.lead?.name ? `${qq.lead.company || qq.lead.name} (lead)` : "")} · {qq.service} {qq.assignedTo ? `· ${qq.assignedTo}` : ""}
                       </div>
                     </div>
                     <Badge status={qq.status} />

@@ -25,6 +25,7 @@ export interface QueryT {
   amount?: number;
   dueDate?: string;
   notes?: string;
+  lead?: { name?: string; email?: string; phone?: string; company?: string; budget?: string; source?: string; page?: string } | null;
   createdAt: string;
   updatedAt: string;
 }

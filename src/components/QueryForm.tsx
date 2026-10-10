@@ -89,9 +89,9 @@ export function QueryFormModal({
   return (
     <Modal open={open} onClose={onClose} title={initial ? "Edit query / project" : "New query / project"} subtitle="What the client needs, who owns it and when it is due." size="lg">
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Client *" className="sm:col-span-2">
-          <select className="input" value={form.client} onChange={set("client")} required disabled={!!clientId && !initial}>
-            <option value="">Select a client</option>
+        <Field label={initial?.lead?.name ? "Client (link once they become a client)" : "Client *"} className="sm:col-span-2">
+          <select className="input" value={form.client} onChange={set("client")} required={!initial?.lead?.name} disabled={!!clientId && !initial}>
+            <option value="">{initial?.lead?.name ? `No client yet (lead: ${initial.lead.name})` : "Select a client"}</option>
             {clients.map((c) => (
               <option key={c._id} value={c._id}>
                 {c.name}

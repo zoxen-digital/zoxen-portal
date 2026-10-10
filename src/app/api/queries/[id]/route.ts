@@ -15,7 +15,14 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
   // Team members can move their own queries along and add notes, nothing else.
   const data = cleanQuery(pick(await req.json(), isTeam ? ["status", "notes"] : QUERY_FIELDS));
   if ("title" in data && !data.title) return error("Query title is required");
-  if ("client" in data && !validId(String(data.client))) return error("Please select a client");
+  if ("client" in data) {
+    if (data.client === "" || data.client === null) {
+      // Only website leads may stay without a client.
+      const cur = await Query.findById(id).select("lead.name").lean<{ lead?: { name?: string } }>();
+      if (!cur?.lead?.name) return error("Please select a client");
+      data.client = null;
+    } else if (!validId(String(data.client))) return error("Please select a client");
+  }
   const filter = isTeam ? { _id: id, assignedTo: user.name } : { _id: id };
   const query = await Query.findOneAndUpdate(filter, data, { new: true, runValidators: true })
     .select(isTeam ? "-amount" : "")

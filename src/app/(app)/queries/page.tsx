@@ -5,13 +5,14 @@ import { getSettings, teamNames } from "@/lib/settings";
 import { STAFF, pageUser } from "@/lib/session";
 import { Client } from "@/models/Client";
 import { Query } from "@/models/Query";
-import { Avatar, Badge, EmptyState, PageHeader } from "@/components/ui";
+import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { EditQueryButton, NewQueryButton, type ClientOption } from "@/components/QueryForm";
+import { QueryWho } from "@/components/QueryWho";
 import { DeleteButton, StatusSelect } from "@/components/actions";
 import { SearchBox, StatusTabs } from "@/components/Filters";
 import { QUERY_STATUSES } from "@/lib/constants";
 import { escapeRegex, formatDate, formatMoney, isOverdue, serialize } from "@/lib/utils";
-import type { ClientT, QueryT } from "@/lib/types";
+import type { QueryT } from "@/lib/types";
 
 export const metadata = { title: "Queries" };
 
@@ -40,7 +41,16 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
   if (sp.q) {
     const rx = { $regex: escapeRegex(sp.q), $options: "i" };
     const matchingClients = await Client.find({ $or: [{ name: rx }, { company: rx }] }).select("_id").lean();
-    filter.$or = [{ title: rx }, { service: rx }, { description: rx }, { client: { $in: matchingClients.map((c) => c._id) } }];
+    filter.$or = [
+      { title: rx },
+      { service: rx },
+      { description: rx },
+      { client: { $in: matchingClients.map((c) => c._id) } },
+      { "lead.name": rx },
+      { "lead.company": rx },
+      { "lead.email": rx },
+      { "lead.phone": rx },
+    ];
   }
 
   const [docs, clientDocs, statusAgg, overdueCount] = await Promise.all([
@@ -111,22 +121,11 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
               </thead>
               <tbody>
                 {queries.map((q) => {
-                  const c = q.client as ClientT | null;
                   const late = isOverdue(q.dueDate, ["Completed", "Closed"].includes(q.status));
                   return (
                     <tr key={q._id}>
                       <td>
-                        {c ? (
-                          <Link href={`/clients/${c._id}`} className="flex items-center gap-3">
-                            <Avatar name={c.name} />
-                            <div className="min-w-0">
-                              <div className="truncate font-semibold text-heading hover:text-brand">{c.name}</div>
-                              <div className="truncate text-xs text-muted">{c.company}</div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <span className="text-muted">Deleted client</span>
-                        )}
+                        <QueryWho q={q} />
                       </td>
                       <td>
                         <div className="max-w-[260px] truncate font-medium text-fg" title={q.title}>
