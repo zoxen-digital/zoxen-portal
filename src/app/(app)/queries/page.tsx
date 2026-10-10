@@ -8,6 +8,7 @@ import { Query } from "@/models/Query";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { EditQueryButton, NewQueryButton, type ClientOption } from "@/components/QueryForm";
 import { QueryWho } from "@/components/QueryWho";
+import { QueryDetails } from "@/components/QueryDetails";
 import { DeleteButton, StatusSelect } from "@/components/actions";
 import { SearchBox, StatusTabs } from "@/components/Filters";
 import { QUERY_STATUSES } from "@/lib/constants";
@@ -54,7 +55,7 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
   }
 
   const [docs, clientDocs, statusAgg, overdueCount] = await Promise.all([
-    Query.find(filter).select(isOwner ? "" : "-amount").sort({ createdAt: -1 }).limit(500).populate("client", "name company").lean(),
+    Query.find(filter).select(isOwner ? "" : "-amount").sort({ createdAt: -1 }).limit(500).populate("client", "name company email phone").lean(),
     isOwner ? Client.find().sort({ name: 1 }).select("name company").lean() : [],
     Query.aggregate([{ $match: scope }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
     Query.countDocuments({ ...scope, status: { $in: ["Pending", "In Progress"] }, dueDate: { $lt: today } }),
@@ -128,9 +129,7 @@ export default async function QueriesPage({ searchParams }: { searchParams: SP }
                         <QueryWho q={q} />
                       </td>
                       <td>
-                        <div className="max-w-[260px] truncate font-medium text-fg" title={q.title}>
-                          {q.title}
-                        </div>
+                        <QueryDetails q={q} />
                         <div className="text-xs text-muted">{q.service}</div>
                         {q.notes && <div className="mt-0.5 max-w-[260px] truncate text-xs text-amber-600" title={q.notes}>Note: {q.notes}</div>}
                       </td>
