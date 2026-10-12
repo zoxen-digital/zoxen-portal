@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/session";
 import { homeFor } from "@/lib/auth";
@@ -36,6 +37,12 @@ export default async function LoginPage() {
           <LoginForm />
         </Suspense>
       </div>
+      <nav className="absolute inset-x-0 bottom-4 flex flex-wrap justify-center gap-4 px-4 text-xs text-muted">
+        <Link href="/privacy" className="hover:text-fg">Privacy Policy</Link>
+        <Link href="/terms" className="hover:text-fg">Terms of Service</Link>
+        <Link href="/refund-policy" className="hover:text-fg">Refund Policy</Link>
+        <Link href="/data-deletion" className="hover:text-fg">Data Deletion</Link>
+      </nav>
     </main>
   );
 }
