@@ -32,6 +32,7 @@ import {
   Users,
   X,
   MessagesSquare,
+  Contact,
 } from "lucide-react";
 import { MENU_GROUPS } from "./DealTabs";
 import { Logo, LogoMark } from "./Logo";
@@ -50,6 +51,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] =
   { href: "/tickets", label: "Support Tickets", icon: LifeBuoy, roles: ["super_admin", "team_admin"] },
   { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
   { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
+  { href: "/leads", label: "Leads", icon: Contact, roles: ["super_admin", "team_admin"] },
   { href: "/submissions", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin", "team_admin"] },
   { href: "/quotes", label: "Quotes & Contracts", icon: FilePen, roles: ["super_admin"] },
   { href: "/invoices", label: "Invoices & Billing", icon: FileText, roles: ["super_admin"] },

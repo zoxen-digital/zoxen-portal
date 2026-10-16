@@ -7,6 +7,8 @@ import "./Conversation";
 import "./Expense";
 import "./Integration";
 import "./Invoice";
+import "./Lead";
+import "./LeadList";
 import "./LoginEvent";
 import "./Meeting";
 import "./Message";

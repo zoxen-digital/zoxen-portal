@@ -11,6 +11,8 @@ import { User } from "@/models/User";
 import { AuditLog } from "@/models/AuditLog";
 import { LoginEvent } from "@/models/LoginEvent";
 import { Expense } from "@/models/Expense";
+import { Lead } from "@/models/Lead";
+import { LeadList } from "@/models/LeadList";
 import { nextRenewal } from "./expenses";
 import { formatMoney } from "./utils";
 
@@ -174,6 +176,28 @@ async function expenseRenewals() {
   return sent;
 }
 
+/** "Call later" leads due today: one morning alert to whoever uploaded each sheet (owners if unknown). */
+async function leadFollowUps() {
+  const end = new Date();
+  end.setUTCHours(23, 59, 59, 999);
+  const due = await Lead.find({ status: "Call later", followUpAt: { $lte: end }, followUpNotified: null }).select("list name company").limit(1000).lean<{ _id: unknown; list: unknown; name: string; company: string }[]>();
+  if (!due.length) return 0;
+  const byList = new Map<string, typeof due>();
+  for (const l of due) byList.set(String(l.list), [...(byList.get(String(l.list)) || []), l]);
+  const admins = await superAdminIds();
+  for (const [listId, leads] of byList) {
+    const list = await LeadList.findById(listId).select("name createdBy").lean<{ name: string; createdBy?: unknown }>();
+    const names = leads.slice(0, 3).map((l) => l.name || l.company).join(", ");
+    await notify(list?.createdBy ? [String(list.createdBy)] : admins, {
+      title: `${leads.length} lead${leads.length === 1 ? "" : "s"} to follow up today`,
+      body: `${list?.name || "Leads"}: ${names}${leads.length > 3 ? " and more" : ""}`,
+      link: `/leads?list=${listId}&f=due`,
+    });
+  }
+  await Lead.updateMany({ _id: { $in: due.map((l) => l._id) } }, { $set: { followUpNotified: new Date() } });
+  return due.length;
+}
+
 /** Everything the daily job does. Each part is isolated so one failure does not stop the rest. */
 export async function runDailyJobs() {
   await dbConnect();
@@ -187,6 +211,7 @@ export async function runDailyJobs() {
     ["staffDigests", staffDigest],
     ["ownerSummary", ownerSummary],
     ["expenseRenewals", expenseRenewals],
+    ["leadFollowUps", leadFollowUps],
   ];
   for (const [name, job] of jobs) {
     try {
