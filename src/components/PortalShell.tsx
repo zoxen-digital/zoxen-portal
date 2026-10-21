@@ -77,7 +77,7 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
       <LiveUpdates />
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface lg:flex">
+      <aside className="fixed bottom-3 left-3 top-3 z-30 hidden w-64 flex-col overflow-hidden rounded-[28px] bg-surface shadow-[var(--card-shadow)] dark:border dark:border-line lg:flex">
         <div className="flex h-16 items-center px-5">
           <Link href="/portal/chat">
             <Logo />
@@ -91,8 +91,8 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
                 key={n.href}
                 href={n.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                  active ? "bg-brand-gradient text-white shadow" : "text-muted hover:bg-surface-2 hover:text-fg"
+                  "flex items-center gap-3 rounded-full px-3.5 py-2.5 text-sm font-medium transition",
+                  active ? "bg-navy text-white shadow-lg shadow-navy/20 dark:bg-white dark:text-navy" : "text-muted hover:bg-surface-2 hover:text-fg"
                 )}
               >
                 <n.icon className="h-[18px] w-[18px] shrink-0" />
@@ -121,8 +121,8 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
         </div>
       </aside>
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-xl">
+      <div className="lg:pl-[268px]">
+        <header className="sticky top-0 z-20 bg-bg/70 backdrop-blur-xl">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
             <Link href="/portal/chat" className="min-w-0 shrink lg:hidden">
               <Logo />

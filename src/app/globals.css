@@ -5,13 +5,14 @@
 
 :root,
 .paper {
-  --bg: #f6f7fc;
+  --bg: #eef0f5;
   --surface: #ffffff;
-  --surface-2: #f2f4fb;
+  --surface-2: #f4f5f9;
   --sidebar: #ffffff;
-  --line: #e6e8f0;
+  --line: #e7e9f0;
   --fg: #1a1d2e;
   --muted: #6b7085;
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px -14px rgba(15, 23, 42, 0.12);
   --heading: #0b1020;
   --mark: #0b1020;
 }
@@ -26,6 +27,7 @@
   --muted: #8c93b0;
   --heading: #ffffff;
   --mark: #ffffff;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
 
@@ -43,7 +45,8 @@
   --color-brand-600: #1d2dc4;
   --color-violet: #6c3bf5;
   --color-navy: #0b1020;
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-body), ui-sans-serif, sans-serif;
 }
 
 html,
@@ -54,6 +57,27 @@ body {
 
 body {
   -webkit-font-smoothing: antialiased;
+}
+
+/* Soft brand glow behind the app (light mode only), like the Zoxen website. */
+:root:not(.dark) body {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(99, 102, 241, 0.08), transparent 38%),
+    radial-gradient(circle at 92% 10%, rgba(139, 92, 246, 0.06), transparent 40%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Headings and big numbers use the display font, tight and bold. */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-body), ui-sans-serif, sans-serif;
+  letter-spacing: -0.025em;
+}
+h1 {
+  letter-spacing: -0.035em;
 }
 
 @keyframes zx-slide-in {
@@ -82,9 +106,12 @@ body {
 @layer components {
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  border: 1px solid transparent;
+  border-radius: 1.5rem;
+  box-shadow: var(--card-shadow);
+}
+.dark .card {
+  border-color: var(--line);
 }
 
 .bg-brand-gradient {
@@ -104,8 +131,8 @@ body {
   justify-content: center;
   gap: 0.5rem;
   height: 2.5rem;
-  padding: 0 1rem;
-  border-radius: 0.75rem;
+  padding: 0 1.125rem;
+  border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
@@ -118,9 +145,9 @@ body {
 }
 .btn-sm {
   height: 2rem;
-  padding: 0 0.75rem;
+  padding: 0 0.875rem;
   font-size: 0.8125rem;
-  border-radius: 0.625rem;
+  border-radius: 9999px;
 }
 .btn-primary {
   color: #fff;
@@ -158,7 +185,7 @@ body {
   width: 100%;
   height: 2.625rem;
   padding: 0 0.875rem;
-  border-radius: 0.75rem;
+  border-radius: 0.875rem;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--fg);
@@ -207,14 +234,17 @@ select.input {
   background: var(--surface-2);
   padding: 0.75rem 1rem;
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.6875rem;
 }
 .table thead th:first-child {
-  border-top-left-radius: 0.75rem;
-  border-bottom-left-radius: 0.75rem;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
 }
 .table thead th:last-child {
-  border-top-right-radius: 0.75rem;
-  border-bottom-right-radius: 0.75rem;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
 }
 .table tbody td {
   padding: 0.85rem 1rem;

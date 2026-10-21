@@ -92,7 +92,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-heading sm:text-[28px]">{title}</h1>
+        <h1 className="text-[26px] font-bold text-heading sm:text-[32px]">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
       {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
@@ -156,17 +156,15 @@ export function StatCard({
   href?: string;
 }) {
   const body = (
-    <div className="card h-full p-4 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand/5">
-      <div className="flex items-center gap-3">
-        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", TONES[tone])}>
-          <Icon className="h-5 w-5" />
+    <div className="card h-full p-4 transition hover:-translate-y-0.5 sm:p-5">
+      <div className="flex items-center gap-2.5">
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", TONES[tone])}>
+          <Icon className="h-[18px] w-[18px]" />
         </div>
-        <div className="min-w-0">
-          <div className="truncate text-[13px] font-medium text-muted">{label}</div>
-          <div className={cn("truncate text-xl font-bold text-heading xl:text-2xl", valueClass)}>{value}</div>
-        </div>
+        <div className="truncate text-[13px] font-medium text-muted">{label}</div>
       </div>
-      {hint && <div className="mt-3 truncate text-xs text-muted">{hint}</div>}
+      <div className={cn("font-display mt-3 truncate text-[22px] font-bold leading-none text-heading sm:text-[26px] xl:text-[30px]", valueClass)}>{value}</div>
+      {hint && <div className="mt-2.5 truncate text-xs text-muted">{hint}</div>}
     </div>
   );
   return href ? <Link href={href}>{body}</Link> : body;

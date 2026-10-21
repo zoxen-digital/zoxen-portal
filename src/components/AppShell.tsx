@@ -137,11 +137,11 @@ export function AppShell({
                 href={item.href}
                 title={mini ? item.label : undefined}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                  "group flex items-center gap-3 rounded-full px-3.5 py-2 text-sm font-medium transition",
                   mini && "justify-center px-0",
                   active
-                    ? "bg-brand-gradient text-white shadow-lg shadow-brand/25"
-                    : "text-fg/80 hover:bg-surface-2 hover:text-heading"
+                    ? "bg-navy text-white shadow-lg shadow-navy/20 dark:bg-white dark:text-navy"
+                    : "text-fg/75 hover:bg-surface-2 hover:text-heading"
                 )}
               >
                 <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -191,7 +191,7 @@ export function AppShell({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden border-r border-line bg-sidebar transition-[width] duration-200 lg:block",
+          "fixed bottom-3 left-3 top-3 z-30 hidden overflow-hidden rounded-[28px] bg-sidebar shadow-[var(--card-shadow)] transition-[width] duration-200 dark:border dark:border-line lg:block",
           collapsed ? "w-[76px]" : "w-[264px]"
         )}
       >
@@ -206,7 +206,7 @@ export function AppShell({
         </div>
       )}
 
-      <div className={cn("transition-[padding] duration-200", collapsed ? "lg:pl-[76px]" : "lg:pl-[264px]")}>
+      <div className={cn("transition-[padding] duration-200", collapsed ? "lg:pl-[88px]" : "lg:pl-[276px]")}>
         <Topbar
           onMenu={() => setMobileOpen(true)}
           userName={userName}
@@ -262,7 +262,7 @@ function Topbar({
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-bg/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 bg-bg/70 backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button onClick={onMenu} className="btn btn-outline px-2.5 lg:hidden" aria-label="Open menu">
           <Menu className="h-5 w-5" />
@@ -280,7 +280,7 @@ function Topbar({
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="input h-11 pl-10 pr-14"
+            className="input h-11 rounded-full border-transparent pl-10 pr-14 shadow-[var(--card-shadow)]"
             placeholder="Search clients, invoices, projects..."
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-line bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted">

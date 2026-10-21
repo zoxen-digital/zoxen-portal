@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Hanken_Grotesk, Sora } from "next/font/google";
 import "./globals.css";
 import { DialogProvider } from "@/components/Dialogs";
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
+// Same type as the Zoxen website: Sora for headings and numbers, Hanken Grotesk for text.
+const sora = Sora({ subsets: ["latin"], variable: "--font-display", weight: ["400", "600", "700", "800"], display: "swap" });
+const hanken = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "Zoxen Digital", template: "%s | Zoxen Digital" },
@@ -21,7 +23,7 @@ const themeScript = `try{if(!/^\\/(invoice|quote|contract)\\//.test(location.pat
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={jakarta.variable}>
+    <html lang="en" suppressHydrationWarning className={`${sora.variable} ${hanken.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

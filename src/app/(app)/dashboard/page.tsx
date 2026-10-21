@@ -102,7 +102,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 2xl:grid-cols-6">
         <StatCard href="/clients" icon={Users} tone="blue" label="Total Clients" value={totalClients} hint={`+${newClients} new this month`} />
         <StatCard
           href="/queries?status=Pending"
