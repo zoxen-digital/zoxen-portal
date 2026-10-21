@@ -270,6 +270,7 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
   const [ideas, setIdeas] = useState<string[]>([]);
   const [ideasFor, setIdeasFor] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [aiError, setAiError] = useState("");
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<AttachmentT[]>([]);
   const [project, setProject] = useState<string>("");
@@ -379,30 +380,37 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
   async function suggest(manual = false) {
     if (thinking) return;
     setThinking(true);
+    setAiError("");
     try {
       const r = await api<{ suggestions: string[] }>("/api/ai/suggest", "POST", { clientId });
       setIdeas(r.suggestions);
-      if (manual && !r.suggestions.length) notify("No suggestions for this chat yet", "error");
+      if (!r.suggestions.length) setAiError(manual ? "No suggestions for this chat yet." : "");
     } catch (e) {
       setIdeas([]);
-      if (manual) notify((e as Error).message, "error");
+      // Show why instead of silently closing (e.g. key missing, daily limit, AI busy).
+      setAiError((e as Error).message || "AI could not write suggestions.");
     } finally {
       setThinking(false);
     }
   }
 
-  // When the newest message is from the client, prepare suggestions once (like GoHighLevel).
-  const lastMsg = t?.messages[t.messages.length - 1];
+  // The chat "needs a reply" when the newest message the client can see is theirs (internal notes after it do not count).
+  // Then suggestions are prepared automatically, once per client message (like GoHighLevel).
+  const lastPublic = t ? [...t.messages].reverse().find((m) => !m.internal) : undefined;
+  const waitingOn = lastPublic && lastPublic.authorRole === "client" ? lastPublic._id : "";
   useEffect(() => {
-    if (!lastMsg || lastMsg.authorRole !== "client" || lastMsg.internal || ideasFor === lastMsg._id) return;
-    setIdeasFor(lastMsg._id);
+    if (!waitingOn || ideasFor === waitingOn) return;
+    setIdeasFor(waitingOn);
     suggest();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastMsg?._id]);
-  // Our reply went out: old suggestions no longer fit.
+  }, [waitingOn]);
+  // We replied: old suggestions no longer fit.
   useEffect(() => {
-    if (lastMsg && lastMsg.authorRole !== "client") setIdeas([]);
-  }, [lastMsg]);
+    if (lastPublic && !waitingOn) {
+      setIdeas([]);
+      setAiError("");
+    }
+  }, [lastPublic, waitingOn]);
 
   if (missing) {
     return (
@@ -529,11 +537,18 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
         )}
       </div>
 
-      {mode === "reply" && (ideas.length > 0 || thinking) && (
+      {mode === "reply" && (ideas.length > 0 || thinking || aiError) && (
         <div className="flex items-start gap-2 border-t border-line bg-brand/[0.03] px-3 py-2">
           <Sparkles className="mt-1.5 h-4 w-4 shrink-0 text-brand dark:text-[#8f9bff]" />
           {thinking ? (
             <span className="py-1 text-xs text-muted">Writing suggestions...</span>
+          ) : aiError ? (
+            <span className="flex flex-1 items-center gap-2 py-1 text-xs text-amber-700 dark:text-amber-300">
+              {aiError}
+              <button onClick={() => suggest(true)} className="rounded-full border border-current px-2 py-0.5 font-semibold">
+                Retry
+              </button>
+            </span>
           ) : (
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5">
               {ideas.map((idea, k) => (
@@ -560,7 +575,7 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
             </div>
           )}
           {!thinking && (
-            <button onClick={() => setIdeas([])} className="shrink-0 rounded-full px-1.5 text-xs text-muted hover:text-fg" aria-label="Hide suggestions">
+            <button onClick={() => (setIdeas([]), setAiError(""))} className="shrink-0 rounded-full px-1.5 text-xs text-muted hover:text-fg" aria-label="Hide suggestions">
               ✕
             </button>
           )}
