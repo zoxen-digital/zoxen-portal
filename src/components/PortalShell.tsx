@@ -11,7 +11,6 @@ import {
   Gift,
   KeyRound,
   LayoutGrid,
-  LifeBuoy,
   LogOut,
   Menu,
   MessageCircle,
@@ -31,7 +30,6 @@ const NAV = [
   { href: "/portal", label: "My Projects", icon: LayoutGrid, exact: true },
   { href: "/portal/invoices", label: "Invoices", icon: FileText },
   { href: "/portal/documents", label: "Proposals", icon: FileSignature },
-  { href: "/portal/tickets", label: "Support", icon: LifeBuoy },
   { href: "/portal/onboarding", label: "Onboarding", icon: ClipboardList },
   { href: "/portal/reports", label: "Reports", icon: BarChart3 },
   { href: "/portal/reviews", label: "Reviews", icon: MessageSquareQuote },
@@ -39,7 +37,7 @@ const NAV = [
 ];
 
 /** The four pages a client opens most; the rest sit behind "More" on phones. */
-const TABS = ["/portal/chat", "/portal", "/portal/invoices", "/portal/tickets"];
+const TABS = ["/portal/chat", "/portal", "/portal/invoices", "/portal/documents"];
 
 export function PortalShell({ children, userName, company, unread = 0 }: { children: React.ReactNode; userName: string; company: string; unread?: number }) {
   const pathname = usePathname();

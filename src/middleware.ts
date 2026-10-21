@@ -54,6 +54,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Support tickets were replaced by the chat: old links open the inbox / client chat instead.
+  if (!pathname.startsWith("/api/") && matches(pathname, ["/tickets", "/portal/tickets"])) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.startsWith("/portal") ? "/portal/chat" : "/inbox";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   const role = session.role;
   const allowed =
     matches(pathname, SHARED) ||

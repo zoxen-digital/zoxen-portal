@@ -1,11 +1,9 @@
 import { Types } from "mongoose";
 import { dbConnect } from "./db";
 import { projectScope } from "./projects";
-import { ticketScope } from "./tickets";
-import { OPEN_STAGES, OPEN_TICKET_STATUSES } from "./constants";
+import { OPEN_STAGES } from "./constants";
 import type { CurrentUser } from "./session";
 import { Project } from "@/models/Project";
-import { Ticket } from "@/models/Ticket";
 import { Query } from "@/models/Query";
 import { Meeting } from "@/models/Meeting";
 import { Message } from "@/models/Message";
@@ -47,7 +45,8 @@ export async function today(user: CurrentUser): Promise<TodayData> {
 
   const [projects, tickets, queries] = await Promise.all([
     Project.find({ ...scope, stage: { $in: OPEN_STAGES } }).populate("client", "name company").lean<any[]>(),
-    Ticket.find({ ...(await ticketScope(user)), status: { $in: OPEN_TICKET_STATUSES } }).populate("client", "name company").lean<any[]>(),
+    // Support tickets were replaced by the client chat; old tickets no longer show on My Day.
+    Promise.resolve([] as any[]),
     Query.find({ ...(owner ? {} : { assignedTo: user.name }), status: { $in: ["Pending", "In Progress"] }, dueDate: { $lt: end } })
       .populate("client", "name company")
       .lean<any[]>(),
