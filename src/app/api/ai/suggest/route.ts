@@ -43,6 +43,7 @@ Return JSON: {"suggestions": ["...", "...", "..."]}`,
     json: true,
     temperature: 0.7,
     maxTokens: 500,
+    fast: true,
   });
   let suggestions: string[] = [];
   try {

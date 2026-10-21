@@ -9,7 +9,8 @@ import { HttpError } from "./api";
  * "-latest" aliases always point at Google's current Flash models (older fixed versions get retired for new keys).
  * If one is busy (503) or unavailable, the next is tried.
  */
-const MODELS = () => [...new Set([process.env.GEMINI_MODEL, "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[])];
+const MODELS = (fast?: boolean) =>
+  [...new Set((fast ? ["gemini-flash-lite-latest", "gemini-flash-latest"] : [process.env.GEMINI_MODEL, "gemini-flash-latest", "gemini-flash-lite-latest"]).filter(Boolean) as string[])];
 
 export function aiEnabled() {
   return !!process.env.GEMINI_API_KEY;
@@ -17,7 +18,8 @@ export function aiEnabled() {
 
 type Turn = { role: "user" | "model"; text: string };
 
-export async function gemini(opts: { system: string; turns: Turn[]; json?: boolean; temperature?: number; maxTokens?: number }) {
+/** `fast`: lighter model first (a few seconds instead of ~20), for short things like reply suggestions. */
+export async function gemini(opts: { system: string; turns: Turn[]; json?: boolean; temperature?: number; maxTokens?: number; fast?: boolean }) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new HttpError("AI is not set up yet. Add GEMINI_API_KEY in Vercel settings.", 503);
   const body = JSON.stringify({
@@ -31,7 +33,7 @@ export async function gemini(opts: { system: string; turns: Turn[]; json?: boole
     },
   });
   let res: Response | null = null;
-  for (const model of MODELS()) {
+  for (const model of MODELS(opts.fast)) {
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },

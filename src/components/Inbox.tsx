@@ -359,6 +359,23 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
     }
   }
 
+  /** One-click send of an AI suggestion straight to the client. */
+  async function sendSuggestion(text: string) {
+    if (sending) return;
+    setSending(true);
+    try {
+      await api(`/api/inbox/${clientId}/messages`, "POST", { body: text, attachments: [], internal: false, mentions: [], project: project || null });
+      setIdeas([]);
+      await load();
+      onChanged();
+      notify("Reply sent");
+    } catch (e) {
+      notify((e as Error).message, "error");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function suggest(manual = false) {
     if (thinking) return;
     setThinking(true);
@@ -520,17 +537,25 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
           ) : (
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5">
               {ideas.map((idea, k) => (
-                <button
-                  key={k}
-                  onClick={() => {
-                    setBody(idea);
-                    requestAnimationFrame(() => boxRef.current?.focus());
-                  }}
-                  className="max-w-[320px] shrink-0 rounded-2xl border border-brand/20 bg-surface px-3 py-1.5 text-left text-xs text-fg transition hover:border-brand hover:bg-brand/5"
-                  title={idea}
-                >
-                  <span className="line-clamp-2">{idea}</span>
-                </button>
+                <div key={k} className="flex w-[300px] shrink-0 flex-col justify-between gap-2 rounded-2xl border border-brand/20 bg-surface p-2.5 text-xs text-fg">
+                  <span className="line-clamp-3" title={idea}>
+                    {idea}
+                  </span>
+                  <div className="flex justify-end gap-1.5">
+                    <button
+                      onClick={() => {
+                        setBody(idea);
+                        requestAnimationFrame(() => boxRef.current?.focus());
+                      }}
+                      className="rounded-full px-2.5 py-1 font-semibold text-muted hover:bg-surface-2 hover:text-fg"
+                    >
+                      Edit
+                    </button>
+                    <button onClick={() => sendSuggestion(idea)} disabled={sending} className="flex items-center gap-1 rounded-full bg-brand-gradient px-3 py-1 font-semibold text-white disabled:opacity-60">
+                      {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Send
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
