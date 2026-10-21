@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, BarChart3, Briefcase, Crown, Receipt, TrendingUp, Users, Wallet } from "lucide-react";
 import { dbConnect } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { converter } from "@/lib/fx";
 import { Invoice } from "@/models/Invoice";
 import { Query } from "@/models/Query";
 import { Badge, CardHeader, EmptyState, PageHeader, StatCard } from "@/components/ui";
@@ -14,7 +15,7 @@ export const metadata = { title: "Reports" };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const ACTIVE = { status: { $nin: ["Draft", "Cancelled"] } };
 
-type Group = { _id: { y: number; m: number }; total: number };
+type Group = { _id: { y: number; m: number; c?: string }; total: number };
 
 export default async function ReportsPage() {
   await dbConnect();
@@ -23,20 +24,20 @@ export default async function ReportsPage() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-  const [summary, invoicedByMonth, collectedByMonth, byService, topClients, workload, outstanding] = await Promise.all([
+  const [summary, invoicedByMonth, collectedByMonth, byService, topClientsByCur, workload, outstanding] = await Promise.all([
     Invoice.aggregate([
       { $match: ACTIVE },
-      { $group: { _id: null, total: { $sum: "$totals.total" }, paid: { $sum: "$totals.paid" }, balance: { $sum: "$totals.balance" }, count: { $sum: 1 } } },
+      { $group: { _id: "$currency", total: { $sum: "$totals.total" }, paid: { $sum: "$totals.paid" }, balance: { $sum: "$totals.balance" }, count: { $sum: 1 } } },
     ]),
     Invoice.aggregate([
       { $match: { ...ACTIVE, issueDate: { $gte: start } } },
-      { $group: { _id: { y: { $year: "$issueDate" }, m: { $month: "$issueDate" } }, total: { $sum: "$totals.total" } } },
+      { $group: { _id: { y: { $year: "$issueDate" }, m: { $month: "$issueDate" }, c: "$currency" }, total: { $sum: "$totals.total" } } },
     ]),
     Invoice.aggregate([
       { $match: ACTIVE },
       { $unwind: "$payments" },
       { $match: { "payments.date": { $gte: start } } },
-      { $group: { _id: { y: { $year: "$payments.date" }, m: { $month: "$payments.date" } }, total: { $sum: "$payments.amount" } } },
+      { $group: { _id: { y: { $year: "$payments.date" }, m: { $month: "$payments.date" }, c: "$currency" }, total: { $sum: "$payments.amount" } } },
     ]),
     Query.aggregate([
       { $group: { _id: { $ifNull: ["$service", "Other"] }, count: { $sum: 1 }, value: { $sum: "$amount" }, done: { $sum: { $cond: [{ $in: ["$status", ["Completed", "Closed"]] }, 1, 0] } } } },
@@ -44,9 +45,7 @@ export default async function ReportsPage() {
     ]),
     Invoice.aggregate([
       { $match: ACTIVE },
-      { $group: { _id: "$client", name: { $first: "$clientSnapshot.name" }, company: { $first: "$clientSnapshot.company" }, total: { $sum: "$totals.total" }, balance: { $sum: "$totals.balance" }, count: { $sum: 1 } } },
-      { $sort: { total: -1 } },
-      { $limit: 8 },
+      { $group: { _id: { client: "$client", c: "$currency" }, name: { $first: "$clientSnapshot.name" }, company: { $first: "$clientSnapshot.company" }, total: { $sum: "$totals.total" }, balance: { $sum: "$totals.balance" }, count: { $sum: 1 } } },
     ]),
     Query.aggregate([
       {
@@ -65,15 +64,36 @@ export default async function ReportsPage() {
     Invoice.find({ ...ACTIVE, "totals.balance": { $gt: 0 } }).sort({ dueDate: 1 }).limit(20).lean(),
   ]);
 
-  const s = summary[0] || { total: 0, paid: 0, balance: 0, count: 0 };
+  // Invoices can be in different currencies: convert each to the report currency at today's rate before adding.
+  const fx = await converter(cur);
+  type Cur = { _id: string | null; total: number; paid: number; balance: number; count: number };
+  const s = (summary as Cur[]).reduce(
+    (a, r) => ({
+      total: a.total + fx(r.total, r._id || cur),
+      paid: a.paid + fx(r.paid, r._id || cur),
+      balance: a.balance + fx(r.balance, r._id || cur),
+      count: a.count + r.count,
+    }),
+    { total: 0, paid: 0, balance: 0, count: 0 }
+  );
+  const byClient = new Map<string, { _id: unknown; name: string; company?: string; total: number; balance: number; count: number }>();
+  for (const r of topClientsByCur as { _id: { client: unknown; c?: string }; name: string; company?: string; total: number; balance: number; count: number }[]) {
+    const k = String(r._id.client);
+    const prev = byClient.get(k) || { _id: r._id.client, name: r.name, company: r.company, total: 0, balance: 0, count: 0 };
+    prev.total += fx(r.total, r._id.c || cur);
+    prev.balance += fx(r.balance, r._id.c || cur);
+    prev.count += r.count;
+    byClient.set(k, prev);
+  }
+  const topClients = [...byClient.values()].sort((a, b) => b.total - a.total).slice(0, 8);
   const months = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
     const match = (g: Group) => g._id.y === d.getFullYear() && g._id.m === d.getMonth() + 1;
     return {
       label: MONTHS[d.getMonth()]!,
       sub: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-      invoiced: (invoicedByMonth as Group[]).find(match)?.total || 0,
-      collected: (collectedByMonth as Group[]).find(match)?.total || 0,
+      invoiced: (invoicedByMonth as Group[]).filter(match).reduce((a, g) => a + fx(g.total, g._id.c || cur), 0),
+      collected: (collectedByMonth as Group[]).filter(match).reduce((a, g) => a + fx(g.total, g._id.c || cur), 0),
     };
   });
   const due = serialize<InvoiceT[]>(outstanding);

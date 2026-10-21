@@ -11,13 +11,15 @@ import { Project } from "@/models/Project";
 import { Avatar } from "@/components/ui";
 import { AreaChart, Gauge, MiniBars, Sparkline } from "@/components/dash";
 import { cn, formatMoney } from "@/lib/utils";
+import { converter } from "@/lib/fx";
 
 export const metadata = { title: "Dashboard" };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const ACTIVE_INVOICE = { status: { $nin: ["Draft", "Cancelled"] } };
 
-type Agg = { _id: { y: number; m: number; d?: number }; total: number };
+type Agg = { _id: { y: number; m: number; d?: number; c?: string }; total: number };
+type ByCur = { _id: string | null; total: number; balance?: number; unpaid?: number; n?: number };
 
 function greeting(h: number) {
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
@@ -43,12 +45,12 @@ export default async function DashboardPage() {
 
   const [totals, monthly, payDaily, payMonth, payLastMonth, payToday, recentPayments, clientMonthly, recentClients, totalClients, openProjects, openQueries, unpaidList] =
     await Promise.all([
-      Invoice.aggregate([{ $match: ACTIVE_INVOICE }, { $group: { _id: null, total: { $sum: "$totals.total" }, balance: { $sum: "$totals.balance" }, unpaid: { $sum: { $cond: [{ $gt: ["$totals.balance", 0] }, 1, 0] } } } }]),
-      Invoice.aggregate([{ $match: { ...ACTIVE_INVOICE, issueDate: { $gte: yearStart } } }, { $group: { _id: { y: { $year: "$issueDate" }, m: { $month: "$issueDate" } }, total: { $sum: "$totals.total" } } }]),
-      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: new Date(today.getTime() - 13 * 86_400_000) } } }, { $group: { _id: { y: { $year: "$payments.date" }, m: { $month: "$payments.date" }, d: { $dayOfMonth: "$payments.date" } }, total: { $sum: "$payments.amount" } } }]),
-      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: monthStart } } }, { $group: { _id: null, total: { $sum: "$payments.amount" }, n: { $sum: 1 } } }]),
-      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: lastMonthStart, $lt: monthStart } } }, { $group: { _id: null, total: { $sum: "$payments.amount" } } }]),
-      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: today } } }, { $group: { _id: null, total: { $sum: "$payments.amount" } } }]),
+      Invoice.aggregate([{ $match: ACTIVE_INVOICE }, { $group: { _id: "$currency", total: { $sum: "$totals.total" }, balance: { $sum: "$totals.balance" }, unpaid: { $sum: { $cond: [{ $gt: ["$totals.balance", 0] }, 1, 0] } } } }]),
+      Invoice.aggregate([{ $match: { ...ACTIVE_INVOICE, issueDate: { $gte: yearStart } } }, { $group: { _id: { y: { $year: "$issueDate" }, m: { $month: "$issueDate" }, c: "$currency" }, total: { $sum: "$totals.total" } } }]),
+      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: new Date(today.getTime() - 13 * 86_400_000) } } }, { $group: { _id: { y: { $year: "$payments.date" }, m: { $month: "$payments.date" }, d: { $dayOfMonth: "$payments.date" }, c: "$currency" }, total: { $sum: "$payments.amount" } } }]),
+      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: monthStart } } }, { $group: { _id: "$currency", total: { $sum: "$payments.amount" }, n: { $sum: 1 } } }]),
+      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: lastMonthStart, $lt: monthStart } } }, { $group: { _id: "$currency", total: { $sum: "$payments.amount" } } }]),
+      Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: today } } }, { $group: { _id: "$currency", total: { $sum: "$payments.amount" } } }]),
       Invoice.aggregate([
         { $unwind: "$payments" },
         { $sort: { "payments.date": -1 } },
@@ -63,24 +65,35 @@ export default async function DashboardPage() {
       Invoice.find({ ...ACTIVE_INVOICE, "totals.balance": { $gt: 0 } }).sort({ dueDate: 1 }).limit(1).select("dueDate").lean<{ dueDate?: Date }[]>(),
     ]);
 
-  const inv = totals[0] || { total: 0, balance: 0, unpaid: 0 };
+  // Invoices can be in different currencies: convert each to the dashboard currency at today's rate before adding.
+  const fx = await converter(cur);
+  const sum = (rows: ByCur[], k: "total" | "balance" = "total") => rows.reduce((a, r) => a + fx(r[k] || 0, r._id || cur), 0);
+  const inv = {
+    total: sum(totals as ByCur[]),
+    balance: sum(totals as ByCur[], "balance"),
+    unpaid: (totals as ByCur[]).reduce((a, r) => a + (r.unpaid || 0), 0),
+  };
+  const mixed = new Set((totals as ByCur[]).map((r) => r._id || cur)).size > 1 || (totals as ByCur[]).some((r) => (r._id || cur) !== cur);
+  const otherCur = (totals as ByCur[]).map((r) => r._id).find((c) => c && c !== cur);
   const revenue = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(yearStart.getFullYear(), yearStart.getMonth() + i, 1);
-    const hit = (monthly as Agg[]).find((m) => m._id.y === d.getFullYear() && m._id.m === d.getMonth() + 1);
-    return { label: MONTHS[d.getMonth()]!, sub: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`, value: hit?.total || 0 };
+    const value = (monthly as Agg[]).filter((m) => m._id.y === d.getFullYear() && m._id.m === d.getMonth() + 1).reduce((a, m) => a + fx(m.total, m._id.c || cur), 0);
+    return { label: MONTHS[d.getMonth()]!, sub: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`, value };
   });
   const thisMonth = revenue[11]!.value;
   const lastMonth = revenue[10]!.value;
   const daily = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today.getTime() - (13 - i) * 86_400_000);
-    return (payDaily as Agg[]).find((x) => x._id.y === d.getFullYear() && x._id.m === d.getMonth() + 1 && x._id.d === d.getDate())?.total || 0;
+    return (payDaily as Agg[]).filter((x) => x._id.y === d.getFullYear() && x._id.m === d.getMonth() + 1 && x._id.d === d.getDate()).reduce((a, x) => a + fx(x.total, x._id.c || cur), 0);
   });
   const clientsByMonth = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
     return (clientMonthly as Agg[]).find((x) => x._id.y === d.getFullYear() && x._id.m === d.getMonth() + 1)?.total || 0;
   });
-  const collected = payMonth[0]?.total || 0;
-  const collectedLast = payLastMonth[0]?.total || 0;
+  const collected = sum(payMonth as ByCur[]);
+  const collectedLast = sum(payLastMonth as ByCur[]);
+  const paymentsThisMonth = (payMonth as ByCur[]).reduce((a, r) => a + (r.n || 0), 0);
+  const collectedToday = sum(payToday as ByCur[]);
   const collectRate = thisMonth ? (collected / thisMonth) * 100 : 0;
   const allTimePaid = inv.total - inv.balance;
   const paidRate = inv.total ? (allTimePaid / inv.total) * 100 : 0;
@@ -107,6 +120,11 @@ export default async function DashboardPage() {
             {greeting(now.getHours())}, {user.name.split(" ")[0]}
           </h1>
           <p className="mt-1 text-sm text-muted">Stay on top of clients, money in and work in progress.</p>
+          {mixed && otherCur && (
+            <p className="mt-1 text-xs text-muted">
+              Totals in {cur}, other currencies converted at {fx.live ? "today's" : "an approximate"} rate (1 {cur} = {(fx.rate(otherCur) || 0).toFixed(2)} {otherCur}).
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2 text-sm font-medium text-fg shadow-[var(--card-shadow)]">
@@ -176,7 +194,7 @@ export default async function DashboardPage() {
             <div>
               <div className="font-display truncate text-[24px] font-bold leading-none sm:text-[28px]">{formatMoney(collected, cur)}</div>
               <div className="mt-1 text-xs text-white/60">
-                This month · {formatMoney(payToday[0]?.total || 0, cur)} today
+                This month · {formatMoney(collectedToday, cur)} today
               </div>
             </div>
             <Sparkline values={daily} stroke="#a5b4fc" className="hidden sm:block" />
@@ -224,7 +242,7 @@ export default async function DashboardPage() {
                 {change(collected, collectedLast)} vs last month
               </>
             ) : (
-              `${payMonth[0]?.n || 0} payment${payMonth[0]?.n === 1 ? "" : "s"} received`
+              `${paymentsThisMonth} payment${paymentsThisMonth === 1 ? "" : "s"} received`
             )}
           </div>
           <div className="mt-auto pt-6">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { dbConnect } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { converter } from "@/lib/fx";
 import { Client } from "@/models/Client";
 import { Query } from "@/models/Query";
 import { Invoice } from "@/models/Invoice";
@@ -42,13 +43,22 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
     ]),
     Invoice.aggregate([
       { $match: { status: { $nin: ["Draft", "Cancelled"] } } },
-      { $group: { _id: "$client", total: { $sum: "$totals.total" }, balance: { $sum: "$totals.balance" } } },
+      { $group: { _id: { client: "$client", c: "$currency" }, total: { $sum: "$totals.total" }, balance: { $sum: "$totals.balance" } } },
     ]),
   ]);
 
   const clients = serialize<ClientT[]>(docs);
   const qMap = new Map(queryAgg.map((q: { _id: unknown; total: number; open: number }) => [String(q._id), q]));
-  const iMap = new Map(invoiceAgg.map((i: { _id: unknown; total: number; balance: number }) => [String(i._id), i]));
+  // A client may have invoices in several currencies: convert each to the default currency before adding.
+  const fx = await converter(settings.defaultCurrency);
+  const iMap = new Map<string, { total: number; balance: number }>();
+  for (const i of invoiceAgg as { _id: { client: unknown; c?: string }; total: number; balance: number }[]) {
+    const k = String(i._id.client);
+    const prev = iMap.get(k) || { total: 0, balance: 0 };
+    prev.total += fx(i.total, i._id.c || settings.defaultCurrency);
+    prev.balance += fx(i.balance, i._id.c || settings.defaultCurrency);
+    iMap.set(k, prev);
+  }
   const counts: Record<string, number> = { All: 0 };
   for (const s of statusAgg as { _id: string; n: number }[]) {
     counts[s._id] = s.n;

@@ -6,6 +6,7 @@ import { teamClientIds } from "@/lib/inbox";
 import { gemini, scrub } from "@/lib/ai";
 import { getSettings } from "@/lib/settings";
 import { formatMoney } from "@/lib/utils";
+import { converter } from "@/lib/fx";
 import { Client } from "@/models/Client";
 import { Conversation } from "@/models/Conversation";
 import { Invoice } from "@/models/Invoice";
@@ -79,7 +80,7 @@ async function agencyBrief(scope: Record<string, unknown>, money: boolean, cur: 
     Meeting.find({ ...scope, status: "Scheduled", date: { $gte: now, $lte: new Date(now.getTime() + 7 * 86_400_000) } }).select("title date client").populate("client", "name company").limit(10).lean<any[]>(),
     Query.countDocuments({ ...scope, status: { $in: ["Pending", "In Progress"] } }),
     money ? Invoice.find({ status: { $in: ["Unpaid", "Partially Paid"] }, "totals.balance": { $gt: 0 } }).select("invoiceNumber totals currency dueDate clientSnapshot").sort({ dueDate: 1 }).limit(10).lean<any[]>() : Promise.resolve([]),
-    money ? Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: monthStart } } }, { $group: { _id: null, total: { $sum: "$payments.amount" } } }]) : Promise.resolve([]),
+    money ? Invoice.aggregate([{ $unwind: "$payments" }, { $match: { "payments.date": { $gte: monthStart } } }, { $group: { _id: "$currency", total: { $sum: "$payments.amount" } } }]) : Promise.resolve([]),
   ]);
   const who = (c: any) => c?.company || c?.name || "client";
   const waiting = waitingChats.filter((c) => !c.lastTeamAt || new Date(c.lastClientAt) > new Date(c.lastTeamAt));
@@ -90,7 +91,9 @@ async function agencyBrief(scope: Record<string, unknown>, money: boolean, cur: 
     `Open requests/queries: ${openQueries}`,
   ];
   if (money) {
-    lines.push(`Collected this month: ${formatMoney(monthAgg[0]?.total || 0, cur)}`);
+    const fx = await converter(cur);
+    const collected = (monthAgg as { _id: string | null; total: number }[]).reduce((a, r) => a + fx(r.total, r._id || cur), 0);
+    lines.push(`Collected this month: ${formatMoney(collected, cur)} (other currencies converted at today's rate)`);
     lines.push(`Unpaid invoices:\n` + (overdue.map((i) => `- ${i.invoiceNumber} ${i.clientSnapshot?.company || i.clientSnapshot?.name}: balance ${formatMoney(i.totals?.balance, i.currency)}, due ${day(i.dueDate)}`).join("\n") || "none"));
   }
   return lines.join("\n\n");
