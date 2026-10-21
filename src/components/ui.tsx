@@ -138,6 +138,23 @@ const TONES = {
   slate: "bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300",
 };
 
+/** Red unread counter: 1-9, then "9+". `corner` pins it to the top-right of an icon. */
+export function CountBadge({ n, corner, className }: { n: number; corner?: boolean; className?: string }) {
+  if (!n || n < 1) return null;
+  return (
+    <span
+      className={cn(
+        "flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm shadow-red-500/40",
+        corner && "absolute -right-1.5 -top-1.5 h-[18px] min-w-[18px] px-1 text-[10px] ring-2 ring-surface",
+        className
+      )}
+      aria-label={`${n} unread`}
+    >
+      {n > 9 ? "9+" : n}
+    </span>
+  );
+}
+
 export function StatCard({
   icon: Icon,
   label,

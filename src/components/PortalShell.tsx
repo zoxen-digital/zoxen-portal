@@ -23,7 +23,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
 import { LiveUpdates } from "./LiveUpdates";
 import { PortalTour, startTour } from "./PortalTour";
-import { Avatar } from "./ui";
+import { Avatar, CountBadge } from "./ui";
 import { cn } from "@/lib/utils";
 
 /** Chat first: it is the one place clients talk to us. Everything else is secondary. */
@@ -68,9 +68,7 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
   }
 
   const badge = (n: (typeof NAV)[number], light?: boolean) =>
-    n.href === "/portal/chat" && unread > 0 && !onChat ? (
-      <span className={cn("ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold", light ? "bg-white/25 text-white" : "bg-red-500 text-white")}>{unread}</span>
-    ) : null;
+    n.href === "/portal/chat" && !onChat ? <CountBadge n={unread} className={cn("ml-auto", light && "ring-2 ring-white/30")} /> : null;
 
   return (
     <div className="min-h-screen">
@@ -161,9 +159,7 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
               <Link key={n.href} href={n.href} data-tour={n.href} className={cn("relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-brand dark:text-[#8f9bff]" : "text-muted")}>
                 <span className={cn("relative flex h-8 w-12 items-center justify-center rounded-full transition", active && "bg-brand/10")}>
                   <n.icon className="h-5 w-5" />
-                  {n.href === "/portal/chat" && unread > 0 && !onChat && (
-                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">{unread}</span>
-                  )}
+                  {n.href === "/portal/chat" && !onChat && <CountBadge n={unread} corner />}
                 </span>
                 {n.label === "My Projects" ? "Projects" : n.label}
               </Link>

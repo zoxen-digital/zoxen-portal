@@ -35,7 +35,7 @@ import { MENU_GROUPS } from "./DealTabs";
 import { AskAIButton } from "./AskAI";
 import { Logo, LogoMark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
-import { Avatar } from "./ui";
+import { Avatar, CountBadge } from "./ui";
 import { NotificationBell } from "./NotificationBell";
 import { LiveUpdates } from "./LiveUpdates";
 import { cn } from "@/lib/utils";
@@ -154,11 +154,12 @@ export function AppShell({
                     : "text-fg/75 hover:bg-surface-2 hover:text-heading"
                 )}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <span className="relative shrink-0">
+                  <Icon className="h-5 w-5" />
+                  {mini && item.href === "/inbox" && <CountBadge n={unreadChats} corner />}
+                </span>
                 {!mini && <span className="flex-1 truncate">{item.label}</span>}
-                {!mini && item.href === "/inbox" && unreadChats > 0 && (
-                  <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{unreadChats}</span>
-                )}
+                {!mini && item.href === "/inbox" && <CountBadge n={unreadChats} />}
                 {!mini && item.href === "/submissions" && newSubmissions > 0 && (
                   <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", active ? "bg-white/20" : "bg-violet/10 text-violet")}>
                     {newSubmissions}
