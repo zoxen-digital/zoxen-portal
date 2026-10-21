@@ -40,26 +40,26 @@ import { LiveUpdates } from "./LiveUpdates";
 import { cn } from "@/lib/utils";
 import type { RoleT } from "@/lib/types";
 
-const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[] }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid, roles: ["super_admin"] },
-  { href: "/today", label: "My Day", icon: Sun, roles: ["super_admin", "team_admin"] },
-  { href: "/inbox", label: "Inbox", icon: MessagesSquare, roles: ["super_admin", "team_admin"] },
-  { href: "/projects", label: "Projects", icon: Rocket, roles: ["super_admin", "team_admin"] },
-  { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"] },
-  { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"] },
-  { href: "/leads", label: "Leads", icon: Contact, roles: ["super_admin", "team_admin"] },
-  { href: "/submissions", label: "Onboarding Submissions", icon: ClipboardList, roles: ["super_admin", "team_admin"] },
-  { href: "/invoices", label: "Sales & Billing", icon: FileText, roles: ["super_admin"] },
-  { href: "/reviews", label: "Reviews & Referrals", icon: MessageSquareQuote, roles: ["super_admin"] },
-  { href: "/agent", label: "My Day", icon: Sun, roles: ["agent"] },
-  { href: "/agent/invoices", label: "Invoices", icon: FileText, roles: ["agent"] },
-  { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "agent"] },
-  { href: "/agent/users", label: "Admins & Team", icon: UserCog, roles: ["agent"] },
-  { href: "/agent/audit", label: "Audit Log", icon: ScrollText, roles: ["agent"] },
-  { href: "/agent/logins", label: "Login History", icon: ShieldCheck, roles: ["agent"] },
-  { href: "/agent/trash", label: "Recycle Bin", icon: Trash2, roles: ["agent"] },
-  { href: "/users", label: "Team & Portal Users", icon: UserCog, roles: ["super_admin"] },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin"] },
+const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[]; section: string }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid, roles: ["super_admin"], section: "Overview" },
+  { href: "/today", label: "My Day", icon: Sun, roles: ["super_admin", "team_admin"], section: "Overview" },
+  { href: "/inbox", label: "Inbox", icon: MessagesSquare, roles: ["super_admin", "team_admin"], section: "Overview" },
+  { href: "/projects", label: "Projects", icon: Rocket, roles: ["super_admin", "team_admin"], section: "Work" },
+  { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"], section: "Work" },
+  { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"], section: "Work" },
+  { href: "/leads", label: "Leads", icon: Contact, roles: ["super_admin", "team_admin"], section: "Work" },
+  { href: "/submissions", label: "Onboarding", icon: ClipboardList, roles: ["super_admin", "team_admin"], section: "Work" },
+  { href: "/invoices", label: "Sales & Billing", icon: FileText, roles: ["super_admin"], section: "Business" },
+  { href: "/reviews", label: "Reviews & Referrals", icon: MessageSquareQuote, roles: ["super_admin"], section: "Business" },
+  { href: "/agent", label: "My Day", icon: Sun, roles: ["agent"], section: "Overview" },
+  { href: "/agent/invoices", label: "Invoices", icon: FileText, roles: ["agent"], section: "Overview" },
+  { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "agent"], section: "Business" },
+  { href: "/agent/users", label: "Admins & Team", icon: UserCog, roles: ["agent"], section: "Admin" },
+  { href: "/agent/audit", label: "Audit Log", icon: ScrollText, roles: ["agent"], section: "Admin" },
+  { href: "/agent/logins", label: "Login History", icon: ShieldCheck, roles: ["agent"], section: "Admin" },
+  { href: "/agent/trash", label: "Recycle Bin", icon: Trash2, roles: ["agent"], section: "Admin" },
+  { href: "/users", label: "Team & Users", icon: UserCog, roles: ["super_admin"], section: "Admin" },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin"], section: "Admin" },
 ];
 
 const ROLE_LABEL: Record<RoleT, string> = { agent: "Owner", super_admin: "Super Admin", team_admin: "Team", client: "Client" };
@@ -120,25 +120,33 @@ export function AppShell({
           )}
         </div>
 
-        <nav className={cn("mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pb-2", mini ? "px-2" : "px-4")}>
-          {nav.map((item) => {
+        <nav className={cn("mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto pb-3", mini ? "px-2" : "px-4")}>
+          {nav.map((item, i) => {
+            // Small group titles (Overview, Work, Business, Admin) so the menu reads in chunks.
+            const newSection = item.section !== nav[i - 1]?.section;
             const under = (p: string) => pathname === p || pathname.startsWith(p + "/");
             const active = item.href === "/agent" ? pathname === "/agent" : under(item.href) || (MENU_GROUPS[item.href] || []).some(under);
             const Icon = item.icon;
             return (
-              <Link
-                key={item.href}
+              <div key={item.href}>
+                {newSection &&
+                  (mini ? (
+                    i > 0 && <div className="mx-3 my-3 border-t border-line" />
+                  ) : (
+                    <div className={cn("px-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted/70", i > 0 ? "pt-4" : "pt-1")}>{item.section}</div>
+                  ))}
+                <Link
                 href={item.href}
                 title={mini ? item.label : undefined}
                 className={cn(
-                  "group flex items-center gap-3 rounded-full px-3.5 py-2 text-sm font-medium transition",
+                  "group flex items-center gap-3.5 rounded-full px-4 py-2.5 text-[15px] font-medium transition",
                   mini && "justify-center px-0",
                   active
                     ? "bg-navy text-white shadow-lg shadow-navy/20 dark:bg-white dark:text-navy"
                     : "text-fg/75 hover:bg-surface-2 hover:text-heading"
                 )}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <Icon className="h-5 w-5 shrink-0" />
                 {!mini && <span className="flex-1 truncate">{item.label}</span>}
                 {!mini && item.href === "/inbox" && unreadChats > 0 && (
                   <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{unreadChats}</span>
@@ -149,7 +157,8 @@ export function AppShell({
                   </span>
                 )}
                 {!mini && active && <ChevronRight className="h-4 w-4 opacity-80" />}
-              </Link>
+                </Link>
+              </div>
             );
           })}
         </nav>
@@ -161,19 +170,7 @@ export function AppShell({
             </button>
           </div>
         ) : (
-          <div className="relative m-4 hidden overflow-hidden rounded-2xl border border-line bg-surface-2/60 p-4 [@media(min-height:900px)]:block">
-            <svg className="pointer-events-none absolute -right-6 -top-4 h-32 w-48" viewBox="0 0 200 120" aria-hidden="true">
-              <ellipse cx="100" cy="60" rx="95" ry="30" transform="rotate(-25 100 60)" fill="none" stroke="#6C3BF5" strokeOpacity="0.4" />
-              <circle cx="178" cy="22" r="5" fill="#6C3BF5" fillOpacity="0.7" />
-            </svg>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted">
-              <span className="h-1.5 w-1.5 rounded-full bg-violet" /> Turn Ideas Into
-            </div>
-            <div className="mt-1 text-[15px] font-bold leading-snug text-heading">
-              Extraordinary <br /> Digital Experiences.
-            </div>
-            <div className="mt-3 text-[10px] font-medium tracking-wide text-muted">Web · Branding · Marketing · Growth</div>
-          </div>
+          <div className="h-3" />
         )}
       </div>
     );
