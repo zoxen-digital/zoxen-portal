@@ -42,7 +42,7 @@ export default async function RecurringPage() {
 
   return (
     <div>
-      <SectionTabs group="billing" current="/recurring" />
+      <SectionTabs group="money" current="/recurring" />
       <PageHeader title="Recurring invoices" subtitle="Maintenance, SEO and ads retainers bill themselves: invoice created and sent to the client on each date.">
         <NewRecurringButton clients={clients} settings={formSettings} />
       </PageHeader>

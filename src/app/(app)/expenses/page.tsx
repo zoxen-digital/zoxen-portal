@@ -77,7 +77,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
 
   return (
     <div>
-      <SectionTabs group="billing" current="/expenses" />
+      <SectionTabs group="money" current="/expenses" />
       <PageHeader title="Expenses" subtitle="Everything the business pays for: domains, hosting, database, email, tools and more.">
         <NewExpenseButton currency={cur} clients={clients} />
       </PageHeader>

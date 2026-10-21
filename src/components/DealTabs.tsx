@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { FilePen, FileSignature, FileText, Package, Repeat, Wallet, type LucideIcon } from "lucide-react";
+import { FilePen, FileSignature, FileText, Gift, MessageSquareQuote, Package, Repeat, Wallet, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Tab = { href: string; label: string; icon: LucideIcon };
 
 /**
- * Everything about money sits under one menu item ("Sales & Billing").
+ * Related pages share one menu item and switch with tabs.
  * Each tab is its own page, so only the open tab's data is loaded.
  */
-const TABS: Tab[] = [
+const MONEY: Tab[] = [
   { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/quotes", label: "Quotes", icon: FilePen },
   { href: "/contracts", label: "Contracts", icon: FileSignature },
@@ -17,11 +17,19 @@ const TABS: Tab[] = [
   { href: "/expenses", label: "Expenses", icon: Wallet },
 ];
 
-export function SectionTabs({ current }: { group?: string; current: string }) {
+const GROWTH: Tab[] = [
+  { href: "/reviews", label: "Reviews", icon: MessageSquareQuote },
+  { href: "/referrals", label: "Referrals", icon: Gift },
+];
+
+const GROUPS = { money: MONEY, growth: GROWTH };
+
+export function SectionTabs({ group = "money", current }: { group?: string; current: string }) {
+  const tabs = GROUPS[group as keyof typeof GROUPS] || MONEY;
   return (
-    <nav className="-mx-1 mb-5 overflow-x-auto px-1 pb-1" aria-label="Sales and billing">
+    <nav className="-mx-1 mb-5 overflow-x-auto px-1 pb-1" aria-label="Section">
       <div className="inline-flex gap-1 rounded-full bg-surface p-1 shadow-[var(--card-shadow)]">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = current === t.href;
           return (
             <Link
@@ -45,5 +53,6 @@ export function SectionTabs({ current }: { group?: string; current: string }) {
 
 /** Menu item href -> other paths that should light it up. */
 export const MENU_GROUPS: Record<string, string[]> = {
-  "/invoices": TABS.map((t) => t.href).filter((h) => h !== "/invoices"),
+  "/invoices": MONEY.map((t) => t.href).filter((h) => h !== "/invoices"),
+  "/reviews": ["/referrals"],
 };

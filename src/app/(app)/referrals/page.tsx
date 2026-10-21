@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { Referral } from "@/models/Referral";
 import { Badge, EmptyState, PageHeader, StatCard } from "@/components/ui";
 import { StatusTabs } from "@/components/Filters";
+import { SectionTabs } from "@/components/DealTabs";
 import { ReferralActions } from "@/components/ReferralActions";
 import { formatDate, serialize } from "@/lib/utils";
 import type { ClientT, ReferralT } from "@/lib/types";
@@ -30,6 +31,7 @@ export default async function ReferralsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div>
+      <SectionTabs group="growth" current="/referrals" />
       <PageHeader
         title="Referrals"
         subtitle="Clients share their link from the portal. When a referred form is approved, the reward becomes due; give it, then mark it rewarded."

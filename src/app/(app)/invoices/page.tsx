@@ -55,7 +55,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: SP 
 
   return (
     <div>
-      <SectionTabs group="billing" current="/invoices" />
+      <SectionTabs group="money" current="/invoices" />
       <PageHeader title="Invoices" subtitle="Create, share and track payment on every invoice.">
         <Link href="/invoices/new" className="btn btn-primary">
           <Plus className="h-4 w-4" /> Create Invoice

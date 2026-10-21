@@ -39,7 +39,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
 
   return (
     <div>
-      <SectionTabs group="deals" current="/quotes" />
+      <SectionTabs group="money" current="/quotes" />
       <PageHeader title="Quotes" subtitle="Price offers. The client accepts online, and accepting creates the project and the invoice automatically.">
         <Link href="/quotes/new" className="btn btn-primary">
           <Plus className="h-4 w-4" /> New quote

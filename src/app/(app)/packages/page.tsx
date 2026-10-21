@@ -21,7 +21,7 @@ export default async function PackagesPage() {
 
   return (
     <div>
-      <SectionTabs group="billing" current="/packages" />
+      <SectionTabs group="money" current="/packages" />
       <PageHeader title="Packages" subtitle="Ready-made services. Start one for a client in one click: quote, or project + invoice with the checklist and timeline set.">
         <NewPackageButton currency={settings.defaultCurrency} />
       </PageHeader>

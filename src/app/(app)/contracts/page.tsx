@@ -26,7 +26,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div>
-      <SectionTabs group="deals" current="/contracts" />
+      <SectionTabs group="money" current="/contracts" />
       <PageHeader title="Contracts" subtitle="Agreements clients sign online. Name, date, time and IP are recorded as proof.">
         <Link href="/contracts/new" className="btn btn-primary">
           <Plus className="h-4 w-4" /> New contract

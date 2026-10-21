@@ -5,6 +5,7 @@ import { ADMIN, pageUser } from "@/lib/session";
 import { Review } from "@/models/Review";
 import { Badge, EmptyState, PageHeader, StatCard } from "@/components/ui";
 import { StatusTabs } from "@/components/Filters";
+import { SectionTabs } from "@/components/DealTabs";
 import { ReviewAdminActions, Stars } from "@/components/Reviews";
 import { formatDate, serialize } from "@/lib/utils";
 import type { ClientT, ReviewT } from "@/lib/types";
@@ -27,6 +28,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
 
   return (
     <div>
+      <SectionTabs group="growth" current="/reviews" />
       <PageHeader
         title="Client Reviews"
         subtitle="Clients write reviews from their portal. Approved reviews are shown to every client and on the onboarding form."
