@@ -38,7 +38,12 @@ export default async function InvoicesPage({ searchParams }: { searchParams: SP 
   }
 
   const [docs, statusAgg] = await Promise.all([
-    Invoice.find(filter).sort({ createdAt: -1 }).limit(500).lean(),
+    // Only the columns the list shows, so the page stays fast with many invoices.
+    Invoice.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .select("invoiceNumber clientSnapshot.name clientSnapshot.company issueDate dueDate totals.total totals.balance currency status confirmedAt viewCount publicId")
+      .lean(),
     Invoice.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }]),
   ]);
   const invoices = serialize<InvoiceT[]>(docs);

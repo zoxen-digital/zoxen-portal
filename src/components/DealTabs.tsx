@@ -2,47 +2,48 @@ import Link from "next/link";
 import { FilePen, FileSignature, FileText, Package, Repeat, Wallet, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Tab = { href: string; label: string; hint: string; icon: LucideIcon };
+type Tab = { href: string; label: string; icon: LucideIcon };
 
-/** Pages that share one menu item; tabs switch between them. */
-const GROUPS: Record<string, Tab[]> = {
-  deals: [
-    { href: "/quotes", label: "Quotes", hint: "Price offers", icon: FilePen },
-    { href: "/contracts", label: "Contracts", hint: "Agreements to sign", icon: FileSignature },
-  ],
-  billing: [
-    { href: "/invoices", label: "Invoices", hint: "Bills sent", icon: FileText },
-    { href: "/recurring", label: "Recurring", hint: "Monthly auto bills", icon: Repeat },
-    { href: "/packages", label: "Packages", hint: "Ready services", icon: Package },
-    { href: "/expenses", label: "Expenses", hint: "What we pay", icon: Wallet },
-  ],
-};
+/**
+ * Everything about money sits under one menu item ("Sales & Billing").
+ * Each tab is its own page, so only the open tab's data is loaded.
+ */
+const TABS: Tab[] = [
+  { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/quotes", label: "Quotes", icon: FilePen },
+  { href: "/contracts", label: "Contracts", icon: FileSignature },
+  { href: "/recurring", label: "Recurring", icon: Repeat },
+  { href: "/packages", label: "Packages", icon: Package },
+  { href: "/expenses", label: "Expenses", icon: Wallet },
+];
 
-export function SectionTabs({ group, current }: { group: keyof typeof GROUPS; current: string }) {
+export function SectionTabs({ current }: { group?: string; current: string }) {
   return (
-    <div className="mb-5 flex max-w-full overflow-x-auto">
-      <div className="inline-flex shrink-0 rounded-2xl border border-line bg-surface p-1">
-        {GROUPS[group]!.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className={cn(
-              "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition sm:px-4",
-              current === t.href ? "bg-brand-gradient text-white shadow" : "text-muted hover:text-fg"
-            )}
-          >
-            <t.icon className="h-4 w-4" />
-            {t.label}
-            <span className={cn("hidden text-xs font-normal md:inline", current === t.href ? "text-white/75" : "text-muted")}>· {t.hint}</span>
-          </Link>
-        ))}
+    <nav className="-mx-1 mb-5 overflow-x-auto px-1 pb-1" aria-label="Sales and billing">
+      <div className="inline-flex gap-1 rounded-full bg-surface p-1 shadow-[var(--card-shadow)]">
+        {TABS.map((t) => {
+          const active = current === t.href;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition",
+                active ? "bg-navy text-white shadow dark:bg-white dark:text-navy" : "text-muted hover:bg-surface-2 hover:text-heading"
+              )}
+            >
+              <t.icon className="h-4 w-4" />
+              {t.label}
+            </Link>
+          );
+        })}
       </div>
-    </div>
+    </nav>
   );
 }
 
 /** Menu item href -> other paths that should light it up. */
 export const MENU_GROUPS: Record<string, string[]> = {
-  "/quotes": ["/contracts"],
-  "/invoices": ["/recurring", "/packages", "/expenses"],
+  "/invoices": TABS.map((t) => t.href).filter((h) => h !== "/invoices"),
 };

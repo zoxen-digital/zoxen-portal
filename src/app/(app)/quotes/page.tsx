@@ -28,7 +28,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: SP })
     filter.$or = [{ title: rx }, { number: rx }, { client: { $in: matching.map((c) => c._id) } }];
   }
   const [docs, all] = await Promise.all([
-    Quote.find(filter).sort({ createdAt: -1 }).limit(500).populate("client", "name company").lean(),
+    Quote.find(filter).sort({ createdAt: -1 }).limit(500).select("-items -extraCosts -intro -terms -projectSetup").populate("client", "name company").lean(),
     Quote.find().select("status totals currency").lean<{ status: string; totals?: { total?: number }; currency: string }[]>(),
   ]);
   const quotes = serialize<QuoteT[]>(docs);
