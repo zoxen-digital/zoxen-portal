@@ -143,6 +143,7 @@ export function PortalChat({ companyName }: { companyName: string }) {
       <div className="border-t border-line p-3">
         <div className="flex items-end gap-2">
           <textarea
+            data-tour="chat-input"
             className="input min-h-[44px] flex-1 resize-none"
             rows={1}
             value={body}

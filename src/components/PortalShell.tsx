@@ -16,11 +16,13 @@ import {
   MessageCircle,
   MessageSquareQuote,
   X,
+  PlayCircle,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
 import { LiveUpdates } from "./LiveUpdates";
+import { PortalTour, startTour } from "./PortalTour";
 import { Avatar } from "./ui";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +75,7 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
   return (
     <div className="min-h-screen">
       <LiveUpdates />
+      <PortalTour />
 
       {/* Desktop sidebar */}
       <aside className="fixed bottom-3 left-3 top-3 z-30 hidden w-64 flex-col overflow-hidden rounded-[28px] bg-surface shadow-[var(--card-shadow)] dark:border dark:border-line lg:flex">
@@ -88,6 +91,7 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
               <Link
                 key={n.href}
                 href={n.href}
+                data-tour={n.href}
                 className={cn(
                   "flex items-center gap-3 rounded-full px-3.5 py-2.5 text-sm font-medium transition",
                   active ? "bg-navy text-white shadow-lg shadow-navy/20 dark:bg-white dark:text-navy" : "text-muted hover:bg-surface-2 hover:text-fg"
@@ -108,7 +112,10 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
               <div className="truncate text-xs text-muted">{company}</div>
             </div>
           </div>
-          <div className="mt-1 grid grid-cols-2 gap-1">
+          <button onClick={startTour} className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-brand hover:bg-brand/10 dark:text-[#8f9bff]">
+            <PlayCircle className="h-3.5 w-3.5" /> Replay the tour
+          </button>
+          <div data-tour="account" className="mt-1 grid grid-cols-2 gap-1">
             <Link href="/portal/account" className="flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-muted hover:bg-surface-2 hover:text-fg">
               <KeyRound className="h-3.5 w-3.5" /> Account
             </Link>
@@ -132,8 +139,10 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
               <span className="hidden sm:block">
                 <ThemeToggle />
               </span>
-              <NotificationBell />
-              <button onClick={() => setSheet(true)} className="btn btn-ghost px-2.5 lg:hidden" aria-label="Open menu">
+              <span data-tour="bell" className="rounded-full">
+                <NotificationBell />
+              </span>
+              <button onClick={() => setSheet(true)} data-tour="account" className="btn btn-ghost px-2.5 lg:hidden" aria-label="Open menu">
                 <Menu className="h-5 w-5" />
               </button>
             </div>
@@ -149,7 +158,7 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
           {NAV.filter((n) => TABS.includes(n.href)).map((n) => {
             const active = isActive(n);
             return (
-              <Link key={n.href} href={n.href} className={cn("relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-brand dark:text-[#8f9bff]" : "text-muted")}>
+              <Link key={n.href} href={n.href} data-tour={n.href} className={cn("relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-brand dark:text-[#8f9bff]" : "text-muted")}>
                 <span className={cn("relative flex h-8 w-12 items-center justify-center rounded-full transition", active && "bg-brand/10")}>
                   <n.icon className="h-5 w-5" />
                   {n.href === "/portal/chat" && unread > 0 && !onChat && (
@@ -206,7 +215,16 @@ export function PortalShell({ children, userName, company, unread = 0 }: { child
                 );
               })}
             </div>
-            <div className="mt-4 flex items-center justify-between rounded-2xl border border-line px-4 py-3">
+            <button
+              onClick={() => {
+                setSheet(false);
+                startTour();
+              }}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-brand/30 bg-brand/5 px-4 py-3 text-sm font-semibold text-brand dark:text-[#8f9bff]"
+            >
+              <PlayCircle className="h-4 w-4" /> Replay the tour
+            </button>
+            <div className="mt-2 flex items-center justify-between rounded-2xl border border-line px-4 py-3">
               <span className="text-sm font-semibold text-heading">Appearance</span>
               <ThemeToggle />
             </div>
