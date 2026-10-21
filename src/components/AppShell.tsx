@@ -32,6 +32,7 @@ import {
   Contact,
 } from "lucide-react";
 import { MENU_GROUPS } from "./DealTabs";
+import { AskAIButton } from "./AskAI";
 import { Logo, LogoMark } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar } from "./ui";
@@ -298,6 +299,7 @@ function Topbar({
             </>
           )}
           <ThemeToggle />
+          {role !== "agent" && <AskAIButton />}
           <NotificationBell />
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2.5 rounded-xl p-1 pr-2 hover:bg-surface-2">

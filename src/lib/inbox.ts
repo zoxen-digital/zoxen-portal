@@ -31,7 +31,7 @@ export function toClientMessage(m: any, companyName: string) {
 }
 
 /** Clients whose chats a team member may open: projects they are on, chats assigned to them, or where they were @mentioned. */
-async function teamClientIds(user: CurrentUser) {
+export async function teamClientIds(user: CurrentUser) {
   const me = oid(user.id);
   const [fromProjects, fromChats] = await Promise.all([
     Project.distinct("client", { team: me }),

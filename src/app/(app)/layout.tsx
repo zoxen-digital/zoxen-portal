@@ -1,4 +1,5 @@
 import { InstallApp } from "@/components/InstallApp";
+import { AskAI } from "@/components/AskAI";
 import { AppShell } from "@/components/AppShell";
 import { dbConnect } from "@/lib/db";
 import { STAFF, pageUser } from "@/lib/session";
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <AppShell userName={user.name} userEmail={user.email} role={user.role} newSubmissions={newSubmissions} unreadChats={chats}>
       {children}
       <InstallApp />
+      {user.role !== "agent" && <AskAI />}
     </AppShell>
   );
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, AtSign, Flag, Loader2, Lock, MessagesSquare, Search, Send, UserRound, FolderKanban } from "lucide-react";
+import { ArrowLeft, AtSign, Flag, Loader2, Lock, MessagesSquare, Search, Send, Sparkles, UserRound, FolderKanban } from "lucide-react";
 import { api } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./ui";
@@ -266,6 +266,10 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
   const [t, setT] = useState<Thread | null>(null);
   const [missing, setMissing] = useState(false);
   const [mode, setMode] = useState<"reply" | "note">("reply");
+  // AI reply suggestions (Gemini), fetched once per new client message.
+  const [ideas, setIdeas] = useState<string[]>([]);
+  const [ideasFor, setIdeasFor] = useState("");
+  const [thinking, setThinking] = useState(false);
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<AttachmentT[]>([]);
   const [project, setProject] = useState<string>("");
@@ -354,6 +358,34 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
       setSending(false);
     }
   }
+
+  async function suggest(manual = false) {
+    if (thinking) return;
+    setThinking(true);
+    try {
+      const r = await api<{ suggestions: string[] }>("/api/ai/suggest", "POST", { clientId });
+      setIdeas(r.suggestions);
+      if (manual && !r.suggestions.length) notify("No suggestions for this chat yet", "error");
+    } catch (e) {
+      setIdeas([]);
+      if (manual) notify((e as Error).message, "error");
+    } finally {
+      setThinking(false);
+    }
+  }
+
+  // When the newest message is from the client, prepare suggestions once (like GoHighLevel).
+  const lastMsg = t?.messages[t.messages.length - 1];
+  useEffect(() => {
+    if (!lastMsg || lastMsg.authorRole !== "client" || lastMsg.internal || ideasFor === lastMsg._id) return;
+    setIdeasFor(lastMsg._id);
+    suggest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastMsg?._id]);
+  // Our reply went out: old suggestions no longer fit.
+  useEffect(() => {
+    if (lastMsg && lastMsg.authorRole !== "client") setIdeas([]);
+  }, [lastMsg]);
 
   if (missing) {
     return (
@@ -480,6 +512,36 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
         )}
       </div>
 
+      {mode === "reply" && (ideas.length > 0 || thinking) && (
+        <div className="flex items-start gap-2 border-t border-line bg-brand/[0.03] px-3 py-2">
+          <Sparkles className="mt-1.5 h-4 w-4 shrink-0 text-brand dark:text-[#8f9bff]" />
+          {thinking ? (
+            <span className="py-1 text-xs text-muted">Writing suggestions...</span>
+          ) : (
+            <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5">
+              {ideas.map((idea, k) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setBody(idea);
+                    requestAnimationFrame(() => boxRef.current?.focus());
+                  }}
+                  className="max-w-[320px] shrink-0 rounded-2xl border border-brand/20 bg-surface px-3 py-1.5 text-left text-xs text-fg transition hover:border-brand hover:bg-brand/5"
+                  title={idea}
+                >
+                  <span className="line-clamp-2">{idea}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {!thinking && (
+            <button onClick={() => setIdeas([])} className="shrink-0 rounded-full px-1.5 text-xs text-muted hover:text-fg" aria-label="Hide suggestions">
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
       <div className={cn("border-t p-3", mode === "note" ? "border-amber-300/60 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/5" : "border-line")}>
         <div className="mb-2 flex items-center gap-1">
           <button onClick={() => setMode("reply")} className={cn("rounded-lg px-3 py-1 text-xs font-semibold", mode === "reply" ? "bg-brand-gradient text-white" : "text-muted hover:bg-surface-2")}>
@@ -488,6 +550,11 @@ function ChatPane({ clientId, staff, meId, onBack, onChanged }: { clientId: stri
           <button onClick={() => setMode("note")} className={cn("flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold", mode === "note" ? "bg-amber-500 text-white" : "text-muted hover:bg-surface-2")}>
             <Lock className="h-3 w-3" /> Internal note
           </button>
+          {mode === "reply" && (
+            <button onClick={() => suggest(true)} disabled={thinking} className="flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold text-brand hover:bg-brand/10 dark:text-[#8f9bff]">
+              <Sparkles className="h-3 w-3" /> Suggest reply
+            </button>
+          )}
           <span className="ml-auto hidden items-center gap-1 text-[11px] text-muted sm:flex">
             <AtSign className="h-3 w-3" /> Type @ to tag a teammate
           </span>
