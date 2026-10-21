@@ -5,7 +5,11 @@ import { HttpError } from "./api";
  * so callers send short summaries only: no emails, phone numbers, passwords or payment details.
  */
 
-const MODEL = () => process.env.GEMINI_MODEL || "gemini-2.5-flash";
+/**
+ * "-latest" aliases always point at Google's current Flash models (older fixed versions get retired for new keys).
+ * If one is busy (503) or unavailable, the next is tried.
+ */
+const MODELS = () => [...new Set([process.env.GEMINI_MODEL, "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[])];
 
 export function aiEnabled() {
   return !!process.env.GEMINI_API_KEY;
@@ -16,21 +20,28 @@ type Turn = { role: "user" | "model"; text: string };
 export async function gemini(opts: { system: string; turns: Turn[]; json?: boolean; temperature?: number; maxTokens?: number }) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new HttpError("AI is not set up yet. Add GEMINI_API_KEY in Vercel settings.", 503);
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL()}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: opts.system }] },
-      contents: opts.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
-      generationConfig: {
-        temperature: opts.temperature ?? 0.5,
-        maxOutputTokens: opts.maxTokens ?? 800,
-        ...(opts.json ? { responseMimeType: "application/json" } : {}),
-      },
-    }),
-    signal: AbortSignal.timeout(25_000),
-  }).catch(() => null);
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: opts.system }] },
+    contents: opts.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
+    generationConfig: {
+      temperature: opts.temperature ?? 0.5,
+      // Newer models spend part of this on thinking, so leave room for the answer.
+      maxOutputTokens: (opts.maxTokens ?? 800) + 1500,
+      ...(opts.json ? { responseMimeType: "application/json" } : {}),
+    },
+  });
+  let res: Response | null = null;
+  for (const model of MODELS()) {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body,
+      signal: AbortSignal.timeout(25_000),
+    }).catch(() => null);
+    if (res && ![404, 500, 503].includes(res.status)) break;
+  }
   if (!res) throw new HttpError("AI did not respond. Try again in a moment.", 504);
+  if (res.status === 503) throw new HttpError("AI is busy right now. Try again in a minute.", 503);
   if (res.status === 429) throw new HttpError("AI daily free limit reached. It resets tomorrow.", 429);
   if (!res.ok) throw new HttpError("AI is unavailable right now.", 502);
   const data = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { text?: string }[] } }[] } | null;
