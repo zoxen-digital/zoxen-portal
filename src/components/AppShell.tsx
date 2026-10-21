@@ -105,7 +105,7 @@ export function AppShell({
     const mini = collapsed && !isMobile;
     return (
       <div className="flex h-full flex-col">
-        <div className={cn("flex h-20 items-center px-5", mini ? "justify-center px-2" : "justify-between")}>
+        <div className={cn("flex h-20 shrink-0 items-center px-5 [@media(max-height:820px)]:h-16", mini ? "justify-center px-2" : "justify-between")}>
           <Link href={home}>{mini ? <LogoMark className="h-9 w-auto" id="zx-mini" /> : <Logo />}</Link>
           {isMobile ? (
             <button onClick={() => setMobileOpen(false)} className="btn btn-ghost btn-sm px-2" aria-label="Close menu">
@@ -120,7 +120,7 @@ export function AppShell({
           )}
         </div>
 
-        <nav className={cn("mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto pb-3", mini ? "px-2" : "px-4")}>
+        <nav className={cn("no-scrollbar mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto pb-3 [@media(max-height:820px)]:space-y-0.5 [@media(max-height:760px)]:pb-1", mini ? "px-2" : "px-4")}>
           {nav.map((item, i) => {
             // Small group titles (Overview, Work, Business, Admin) so the menu reads in chunks.
             const newSection = item.section !== nav[i - 1]?.section;
@@ -133,13 +133,20 @@ export function AppShell({
                   (mini ? (
                     i > 0 && <div className="mx-3 my-3 border-t border-line" />
                   ) : (
-                    <div className={cn("px-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted/70", i > 0 ? "pt-4" : "pt-1")}>{item.section}</div>
+                    <>
+                      {/* Very short screens: a thin line instead of the title, so everything still fits. */}
+                      <div className={cn("px-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted/70 [@media(max-height:760px)]:hidden", i > 0 ? "pt-4 [@media(max-height:820px)]:pt-2" : "pt-1")}>
+                        {item.section}
+                      </div>
+                      {i > 0 && <div className="mx-4 my-2 hidden border-t border-line [@media(max-height:760px)]:block" />}
+                    </>
                   ))}
                 <Link
                 href={item.href}
                 title={mini ? item.label : undefined}
                 className={cn(
-                  "group flex items-center gap-3.5 rounded-full px-4 py-2.5 text-[15px] font-medium transition",
+                  // Shrinks on short screens so the whole menu always fits without scrolling.
+                  "group flex items-center gap-3.5 rounded-full px-4 py-2.5 text-[15px] font-medium transition [@media(max-height:900px)]:py-2 [@media(max-height:760px)]:py-1.5 [@media(max-height:760px)]:text-sm",
                   mini && "justify-center px-0",
                   active
                     ? "bg-navy text-white shadow-lg shadow-navy/20 dark:bg-white dark:text-navy"

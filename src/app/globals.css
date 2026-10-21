@@ -267,6 +267,14 @@ select.input {
 }
 }
 
+/* Scrolls if it must, but never shows a scrollbar (sidebar menu). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ---------- Print (invoice PDF) ---------- */
 @media print {
   @page {
