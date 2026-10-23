@@ -18,7 +18,7 @@ export const POST = handle(async (_req: Request, { params }: Ctx) => {
   const source = lead.list?.source || "LinkedIn";
   const q = await Query.create({
     client: null,
-    lead: { name: lead.name || lead.company || "Lead", email: lead.email, phone: lead.phone, company: lead.company, source, page: lead.linkedin },
+    lead: { name: lead.name || lead.company || "Lead", email: lead.email, phone: lead.phone, company: lead.company, source, page: lead.instagram ? `https://instagram.com/${lead.instagram}` : lead.linkedin },
     title: `${source} lead${lead.company ? `: ${lead.company}` : ""}`,
     description: [lead.title && `Title: ${lead.title}`, lead.location && `Location: ${lead.location}`, lead.notes].filter(Boolean).join("\n"),
     status: "Pending",

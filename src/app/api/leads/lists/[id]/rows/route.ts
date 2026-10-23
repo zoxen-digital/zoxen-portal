@@ -28,10 +28,10 @@ export const POST = handle(async (req: Request, { params }: Ctx) => {
     .filter((x): x is NonNullable<typeof x> => !!x);
 
   // Same person twice (same LinkedIn URL or email): keep the first.
-  const existing = await Lead.find({ list: id }).select("linkedin email").lean<{ linkedin?: string; email?: string }[]>();
-  const seen = new Set(existing.flatMap((l) => [l.linkedin, l.email].filter(Boolean) as string[]));
+  const existing = await Lead.find({ list: id }).select("linkedin instagram email").lean<{ linkedin?: string; instagram?: string; email?: string }[]>();
+  const seen = new Set(existing.flatMap((l) => [l.linkedin, l.instagram, l.email].filter(Boolean) as string[]));
   const fresh = leads.filter((l) => {
-    const keys = [l.linkedin, l.email].filter(Boolean);
+    const keys = [l.linkedin, l.instagram, l.email].filter(Boolean);
     if (keys.some((k) => seen.has(k))) return false;
     keys.forEach((k) => seen.add(k));
     return true;

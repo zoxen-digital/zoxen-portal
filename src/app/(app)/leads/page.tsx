@@ -70,6 +70,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     email: d.email,
     phone: d.phone,
     linkedin: d.linkedin,
+    instagram: d.instagram || "",
     location: d.location,
     website: d.website,
     extra: d.extra || {},

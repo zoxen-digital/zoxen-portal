@@ -4,7 +4,7 @@
  * Shared by the browser (preview) and the server (import).
  */
 
-export type LeadFields = { name: string; company: string; title: string; email: string; phone: string; linkedin: string; location: string; website: string };
+export type LeadFields = { name: string; company: string; title: string; email: string; phone: string; linkedin: string; instagram: string; location: string; website: string };
 type Key = keyof LeadFields | "first" | "last";
 
 const SYNONYMS: Record<Key, string[]> = {
@@ -15,6 +15,7 @@ const SYNONYMS: Record<Key, string[]> = {
   title: ["title", "position", "job title", "headline", "designation", "current title", "role", "occupation"],
   email: ["email", "email address", "e-mail", "work email", "business email", "personal email", "emails"],
   phone: ["phone", "phone number", "mobile", "mobile number", "whatsapp", "contact number", "phones", "telephone", "work phone"],
+  instagram: ["instagram", "instagram handle", "instagram username", "ig", "ig handle", "insta", "instagram url", "username", "handle"],
   linkedin: ["linkedin", "linkedin url", "url", "profile url", "linkedin profile", "person linkedin url", "profile link", "public profile url", "linkedin profile url", "profile"],
   location: ["location", "city", "country", "region", "geography", "address", "state"],
   website: ["website", "company website", "domain", "company domain", "site", "web"],
@@ -52,7 +53,7 @@ const cell = (v: unknown, max = 300) => (v === null || v === undefined ? "" : v 
 
 /** One sheet row -> a lead, or null for an empty row. */
 export function rowToLead(headers: unknown[], map: (Key | null)[], row: unknown[]) {
-  const f: LeadFields = { name: "", company: "", title: "", email: "", phone: "", linkedin: "", location: "", website: "" };
+  const f: LeadFields = { name: "", company: "", title: "", email: "", phone: "", linkedin: "", instagram: "", location: "", website: "" };
   let first = "";
   let last = "";
   const extra: Record<string, string> = {};
@@ -68,7 +69,9 @@ export function rowToLead(headers: unknown[], map: (Key | null)[], row: unknown[
   if (!f.name) f.name = [first, last].filter(Boolean).join(" ");
   f.email = f.email.toLowerCase();
   if (f.linkedin && !/^https?:\/\//i.test(f.linkedin) && /linkedin\.com/i.test(f.linkedin)) f.linkedin = `https://${f.linkedin}`;
-  if (!f.name && !f.email && !f.linkedin && !f.phone && !f.company) return null;
+  // "@handle" or a profile URL both become a bare handle.
+  if (f.instagram) f.instagram = f.instagram.replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?].*$/, "").trim();
+  if (!f.name && !f.email && !f.linkedin && !f.instagram && !f.phone && !f.company) return null;
   return { ...f, extra };
 }
 

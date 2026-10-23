@@ -18,6 +18,7 @@ export type LeadRow = {
   email: string;
   phone: string;
   linkedin: string;
+  instagram: string;
   location: string;
   website: string;
   extra: Record<string, string>;
@@ -319,9 +320,14 @@ export function LeadsTable({ initial }: { initial: LeadRow[] }) {
                   </td>
                   <td className="px-3 py-2.5">
                     <button onClick={() => setDetail(r)} className="block max-w-[200px] truncate text-left font-semibold text-heading hover:text-brand">
-                      {r.name || "(no name)"}
+                      {r.name || r.company || "(no name)"}
                     </button>
                     <div className="flex items-center gap-2 text-xs text-muted">
+                      {r.instagram && (
+                        <a href={`https://instagram.com/${r.instagram}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#d62976] hover:underline">
+                          @{r.instagram} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
                       {r.linkedin && (
                         <a href={r.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#0a66c2] hover:underline">
                           LinkedIn <ExternalLink className="h-3 w-3" />
@@ -429,6 +435,7 @@ export function LeadsTable({ initial }: { initial: LeadRow[] }) {
               [
                 ["Email", detail.email],
                 ["Phone", detail.phone],
+                ["Instagram", detail.instagram ? `https://instagram.com/${detail.instagram}` : ""],
                 ["LinkedIn", detail.linkedin],
                 ["Location", detail.location],
                 ["Website", detail.website],

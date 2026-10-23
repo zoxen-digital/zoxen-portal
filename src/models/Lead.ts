@@ -14,6 +14,8 @@ const LeadSchema = new Schema(
     email: { type: String, default: "" },
     phone: { type: String, default: "" },
     linkedin: { type: String, default: "" },
+    /** Instagram handle without @ (outreach by DM). */
+    instagram: { type: String, default: "" },
     location: { type: String, default: "" },
     website: { type: String, default: "" },
     /** Any other columns from the sheet, kept as they were. */
