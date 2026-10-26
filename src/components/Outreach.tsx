@@ -650,7 +650,7 @@ function Mailboxes({ data, reload }: { data: any; reload: () => Promise<void> })
                 <div className="mt-2 flex flex-wrap gap-3 text-xs">
                   <Check ok={t.login === "ok"} label={t.login === "ok" ? "Login works" : `Login failed: ${t.login}`} />
                   <Check ok={t.dns.spf} label="SPF" />
-                  <Check ok={t.dns.dkim} label={t.dns.dkim ? `DKIM (${t.dns.dkimSelector})` : "DKIM"} />
+                  <Check ok={t.dns.dkim || t.dns.freeMail} label={t.dns.freeMail ? "DKIM (signed by provider)" : t.dns.dkim ? `DKIM (${t.dns.dkimSelector})` : "DKIM"} />
                   <Check ok={t.dns.dmarc} label="DMARC" />
                   {t.dns.freeMail && <span className="text-amber-700 dark:text-amber-300">Free mailbox: keep volume very low (about 20/day).</span>}
                 </div>
