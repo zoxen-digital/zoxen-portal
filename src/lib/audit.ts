@@ -5,7 +5,7 @@ import { TrashItem } from "@/models/TrashItem";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /** Requests that are not worth recording (they happen constantly and change nothing important). */
-const SKIP = [/^\/api\/notifications/, /^\/api\/push/, /^\/api\/live/, /^\/api\/upload/, /^\/api\/public\/onboarding\/draft/, /^\/api\/auth\//, /^\/api\/ai\//];
+const SKIP = [/^\/api\/notifications/, /^\/api\/push/, /^\/api\/live/, /^\/api\/upload/, /^\/api\/public\/onboarding\/draft/, /^\/api\/auth\//, /^\/api\/ai\//, /^\/api\/outreach\/tick/];
 
 const NOUN: Record<string, string> = {
   invoices: "invoice",

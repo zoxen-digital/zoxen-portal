@@ -14,6 +14,7 @@ import "./Meeting";
 import "./Message";
 import "./Notification";
 import "./Onboarding";
+import "./Outreach";
 import "./Package";
 import "./Project";
 import "./Query";

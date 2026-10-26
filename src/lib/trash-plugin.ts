@@ -6,7 +6,7 @@ import { currentContext } from "./request-context";
  * collection first (kept 30 days), so the owner can restore it.
  * Registered globally, so it covers every model, however it is deleted.
  */
-const SKIP = new Set(["TrashItem", "AuditLog", "LoginEvent", "Notification"]);
+const SKIP = new Set(["TrashItem", "AuditLog", "LoginEvent", "Notification", "OutreachLog"]);
 const TRASH = "trashitems";
 
 /** A short, human label for the deleted thing (shown in the recycle bin). */
