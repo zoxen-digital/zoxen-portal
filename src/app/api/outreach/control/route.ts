@@ -19,6 +19,14 @@ export const POST = handle(async (req: Request) => {
     const result = await tick({ budgetMs: 45_000 });
     return json({ status: "running", result });
   }
+  if (action === "send-now") {
+    if (!cfg.postalAddress?.trim()) return error("Add your business postal address in Settings first (US law requires it in every email)");
+    if (!(await OutreachMailbox.exists({ active: true }))) return error("Connect a sending mailbox in Settings first");
+    await OutreachConfig.updateOne({ key: "main" }, { $set: { status: "running", pausedReason: "" } });
+    await log(`Send now pressed by ${user.name}`);
+    const result = await tick({ budgetMs: 55_000, sendNow: true });
+    return json({ status: "running", result });
+  }
   if (action === "pause" || action === "stop") {
     await OutreachConfig.updateOne({ key: "main" }, { $set: { status: action === "pause" ? "paused" : "stopped", pausedReason: "" } });
     await log(`Campaign ${action === "pause" ? "paused" : "stopped"} by ${user.name}`);

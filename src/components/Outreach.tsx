@@ -143,6 +143,9 @@ export function OutreachDashboard() {
           <span className={cn("h-2 w-2 rounded-full", status === "running" ? "animate-pulse bg-emerald-500" : status === "paused" ? "bg-amber-500" : "bg-slate-400")} />
           {status === "running" ? "Running" : status === "paused" ? "Paused" : "Stopped"}
         </span>
+        <button className="btn btn-outline" disabled={!!busy || !stats.waiting && !stats.stages.audited} title="Write and send the ready emails now (daily limit still applies)" onClick={() => control("send-now")}>
+          {busy === "send-now" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send now
+        </button>
         {status === "running" ? (
           <>
             <button className="btn btn-outline" disabled={!!busy} onClick={() => control("pause")}>

@@ -266,9 +266,10 @@ async function markSent(b: any, today: string) {
 const isRecipientError = (e: any) => /^5\d\d/.test(String(e?.responseCode || "")) && /recipient|mailbox|user unknown|does not exist|no such user|invalid address|rejected/i.test(String(e?.response || e?.message || ""));
 const isAuthError = (e: any) => /auth|login|credentials|535|534|username and password/i.test(String(e?.response || e?.message || ""));
 
-async function sendBatch(deadline: number, cfg: any, company: string) {
+async function sendBatch(deadline: number, cfg: any, company: string, now = false) {
   const { hour, weekday, day } = central();
-  if (["Sat", "Sun"].includes(weekday) || hour < (cfg.sendFromHour ?? 9) || hour >= (cfg.sendToHour ?? 17)) return { sent: 0, note: "outside sending hours" };
+  // "Send now" skips the time window and the spreading, but never the daily limits.
+  if (!now && (["Sat", "Sun"].includes(weekday) || hour < (cfg.sendFromHour ?? 9) || hour >= (cfg.sendToHour ?? 17))) return { sent: 0, note: "outside sending hours" };
   const boxes = await OutreachMailbox.find({ active: true }).select("+passwordEnc").lean<any[]>();
   if (!boxes.length) return { sent: 0, note: "no mailbox connected" };
 
@@ -279,7 +280,7 @@ async function sendBatch(deadline: number, cfg: any, company: string) {
   if (!remaining) return { sent: 0, note: "daily limit reached" };
   // Spread the day's emails across the sending window (ticks every ~5 min) instead of sending in bursts.
   const ticksLeft = Math.max(1, ((cfg.sendToHour ?? 17) - hour) * 12);
-  const thisTick = Math.min(15, Math.max(1, Math.ceil(remaining / ticksLeft)));
+  const thisTick = now ? Math.min(15, remaining) : Math.min(15, Math.max(1, Math.ceil(remaining / ticksLeft)));
   let sent = 0;
 
   while (sent < thisTick && Date.now() < deadline - 8000) {
@@ -367,7 +368,7 @@ async function sendBatch(deadline: number, cfg: any, company: string) {
 
 // ---------------- Tick ----------------
 
-export async function tick(opts: { budgetMs?: number } = {}) {
+export async function tick(opts: { budgetMs?: number; sendNow?: boolean } = {}) {
   await dbConnect();
   const started = Date.now();
   const deadline = started + (opts.budgetMs ?? 50_000);
@@ -387,10 +388,12 @@ export async function tick(opts: { budgetMs?: number } = {}) {
       if (!cfg.postalAddress?.trim()) {
         out.note = "Add your postal address in Outreach settings (required by law) before sending.";
       } else if (await safetyCheck(cfg)) {
-        out.discovered = await discoverMore(cfg);
-        out.audited = await enrich(deadline - 20_000);
+        if (!opts.sendNow) {
+          out.discovered = await discoverMore(cfg);
+          out.audited = await enrich(deadline - 20_000);
+        }
         out.written = await writeDrafts(deadline - 12_000, cfg, company);
-        const s = await sendBatch(deadline, cfg, company);
+        const s = await sendBatch(deadline, cfg, company, opts.sendNow);
         out.sent = s.sent;
         if (s.note) out.note = s.note;
       }
