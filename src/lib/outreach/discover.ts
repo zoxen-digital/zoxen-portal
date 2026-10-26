@@ -86,15 +86,15 @@ function normalizeUrl(u: string) {
 }
 
 /** Up to `limit` businesses of `category` in `city`, skipping chains. */
-export async function discover(category: string, city: string, limit = 200): Promise<Found[]> {
+export async function discover(category: string, city: string, limit = 200, budgetMs = 45000): Promise<Found[]> {
   const tags = CATEGORY_TAGS[category.toLowerCase()];
   if (!tags) throw new Error(`Unknown category "${category}"`);
   const { lat, lon, r } = await spot(city);
   const parts = tags.map((t) => `nwr${t}["name"](around:${r},${lat},${lon});`).join("");
-  const q = `[out:json][timeout:25];(${parts});out center tags ${Math.min(limit * 2, 600)};`;
+  const q = `[out:json][timeout:${budgetMs > 60000 ? 120 : 25}];(${parts});out center tags ${Math.min(limit * 2, 600)};`;
   // The main public server is often busy (502/504); try the mirrors before giving up.
   let res: Response | null = null;
-  const until = Date.now() + 45000;
+  const until = Date.now() + budgetMs;
   for (const host of OVERPASS) {
     const left = until - Date.now();
     if (left < 5000) break;
@@ -102,7 +102,7 @@ export async function discover(category: string, city: string, limit = 200): Pro
       method: "POST",
       headers: { "User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded" },
       body: "data=" + encodeURIComponent(q),
-      signal: AbortSignal.timeout(Math.min(40000, left)),
+      signal: AbortSignal.timeout(Math.min(Math.max(40000, budgetMs / 2), left)),
     }).catch(() => null);
     if (res?.ok) break;
   }

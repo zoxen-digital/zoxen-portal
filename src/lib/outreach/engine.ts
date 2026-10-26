@@ -447,3 +447,42 @@ export async function stats() {
     suppressed,
   };
 }
+
+/** Bulk lead finding without the per-run time limit (run from a computer, not Vercel): searches every open target, then checks every website. */
+export async function harvest(say: (m: string) => void = console.log) {
+  await dbConnect();
+  const cfg = await getConfig();
+  const clientEmails = new Set((await Client.find({ email: { $ne: null } }).select("email").lean<any[]>()).map((c) => String(c.email).toLowerCase()));
+  for (const [idx, t] of (cfg.targets || []).entries() as IterableIterator<[number, any]>) {
+    if (t.done) continue;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        const found = await discover(t.category, t.city, 200, 300_000);
+        let added = 0;
+        for (const { email, ...f } of found) {
+          if (email && clientEmails.has(email)) continue;
+          const r = await OutreachProspect.updateOne({ sourceKey: f.sourceKey }, { $setOnInsert: { ...f, emailSource: email ? `map:${email}` : "", stage: "new" } }, { upsert: true });
+          if (r.upsertedCount) added++;
+        }
+        await OutreachConfig.updateOne({ key: "main" }, { $set: { [`targets.${idx}.done`]: true, [`targets.${idx}.found`]: added } });
+        await log(`Found ${added} new ${t.category} businesses in ${t.city} (${found.length} listed on the map)`);
+        say(`${t.category} in ${t.city}: ${added} new`);
+        break;
+      } catch (e) {
+        say(`${t.category} in ${t.city}: try ${attempt} failed (${(e as Error).message})`);
+        if (/state or country|Unknown category|Could not find/.test((e as Error).message)) break;
+        await new Promise((r) => setTimeout(r, 20000));
+      }
+    }
+  }
+  let n = 0;
+  for (;;) {
+    const batch = await OutreachProspect.find({ stage: "new", attempts: { $lt: 3 } }).sort({ createdAt: 1 }).limit(8).lean<any[]>();
+    if (!batch.length) break;
+    await OutreachProspect.updateMany({ _id: { $in: batch.map((p) => p._id) } }, { $inc: { attempts: 1 } });
+    await Promise.all(batch.map((p) => enrichOne({ ...p, attempts: (p.attempts || 0) + 1 })));
+    n += batch.length;
+    if (n % 40 === 0) say(`checked ${n} websites, ${await OutreachProspect.countDocuments({ stage: "audited" })} with an email so far`);
+  }
+  say(`done: checked ${n}, ${await OutreachProspect.countDocuments({ stage: "audited" })} ready for an email`);
+}
