@@ -43,22 +43,31 @@ export type Found = {
   email: string;
 };
 
-const g = globalThis as unknown as { _zxAreas?: Map<string, number> };
+type Spot = { lat: number; lon: number; r: number };
+const g = globalThis as unknown as { _zxSpots?: Map<string, Spot> };
 
-async function areaId(city: string) {
-  g._zxAreas ??= new Map();
-  if (g._zxAreas.has(city)) return g._zxAreas.get(city)!;
+// Public Overpass servers; the main one is often overloaded, so the others are tried in turn.
+const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+
+/** City centre and search radius (half the city size, at most 8 km so big cities stay fast). */
+async function spot(city: string) {
+  g._zxSpots ??= new Map();
+  if (g._zxSpots.has(city)) return g._zxSpots.get(city)!;
   const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(city)}&countrycodes=us,ca,gb,ae,au`;
   const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Location lookup failed (${res.status})`);
-  const hits = (await res.json()) as { osm_type: string; osm_id: number; class: string; type: string }[];
-  // Prefer the administrative boundary (city limits) over a point.
-  const rel = hits.find((h) => h.osm_type === "relation") || hits[0];
-  if (!rel) throw new Error(`Could not find "${city}" on the map`);
-  const id = rel.osm_type === "relation" ? 3600000000 + rel.osm_id : rel.osm_type === "way" ? 2400000000 + rel.osm_id : 0;
-  if (!id) throw new Error(`"${city}" is not an area on the map; try "City, ST"`);
-  g._zxAreas.set(city, id);
-  return id;
+  const hits = (await res.json()) as { osm_type: string; lat: string; lon: string; boundingbox: string[]; place_rank: number }[];
+  // Prefer the city boundary (rank ~16) over the county or state with the same name.
+  const rels = hits.filter((h) => h.osm_type === "relation").sort((a, b) => Math.abs(a.place_rank - 16) - Math.abs(b.place_rank - 16));
+  const hit = rels[0] || hits[0];
+  if (!hit) throw new Error(`Could not find "${city}" on the map`);
+  // States and countries are too big for one map search; ask for a city instead.
+  if ((hit.place_rank || 30) < 12) throw new Error(`"${city}" is a whole state or country; add a city instead, e.g. "Los Angeles, CA"`);
+  const [s1, n1, w1, e1] = hit.boundingbox.map(Number);
+  const km = Math.hypot((n1 - s1) * 111, (e1 - w1) * 111 * Math.cos((Number(hit.lat) * Math.PI) / 180)) / 2;
+  const sp = { lat: Number(hit.lat), lon: Number(hit.lon), r: Math.round(Math.min(8, Math.max(2, km)) * 1000) };
+  g._zxSpots.set(city, sp);
+  return sp;
 }
 
 const clean = (v?: string) => (v || "").trim().slice(0, 300);
@@ -80,16 +89,24 @@ function normalizeUrl(u: string) {
 export async function discover(category: string, city: string, limit = 200): Promise<Found[]> {
   const tags = CATEGORY_TAGS[category.toLowerCase()];
   if (!tags) throw new Error(`Unknown category "${category}"`);
-  const area = await areaId(city);
-  const parts = tags.map((t) => `nwr${t}["name"](area.a);`).join("");
-  const q = `[out:json][timeout:50];area(${area})->.a;(${parts});out center tags ${Math.min(limit * 2, 600)};`;
-  const res = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    headers: { "User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded" },
-    body: "data=" + encodeURIComponent(q),
-    signal: AbortSignal.timeout(55000),
-  });
-  if (!res.ok) throw new Error(`Map search failed (${res.status}); it will retry next run`);
+  const { lat, lon, r } = await spot(city);
+  const parts = tags.map((t) => `nwr${t}["name"](around:${r},${lat},${lon});`).join("");
+  const q = `[out:json][timeout:25];(${parts});out center tags ${Math.min(limit * 2, 600)};`;
+  // The main public server is often busy (502/504); try the mirrors before giving up.
+  let res: Response | null = null;
+  const until = Date.now() + 45000;
+  for (const host of OVERPASS) {
+    const left = until - Date.now();
+    if (left < 5000) break;
+    res = await fetch(host, {
+      method: "POST",
+      headers: { "User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded" },
+      body: "data=" + encodeURIComponent(q),
+      signal: AbortSignal.timeout(Math.min(40000, left)),
+    }).catch(() => null);
+    if (res?.ok) break;
+  }
+  if (!res?.ok) throw new Error(`Map search failed (${res?.status || "timeout"}); it will retry next run`);
   const data = (await res.json()) as { elements: { type: string; id: number; tags: Record<string, string> }[] };
   const out: Found[] = [];
   for (const el of data.elements || []) {
