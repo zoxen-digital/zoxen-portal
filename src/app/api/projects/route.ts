@@ -36,7 +36,7 @@ export const POST = handle(async (req: Request) => {
   await logActivity(project, user, "Project added to your portal", true);
 
   const team = (data.team as string[]).filter((id) => id !== user.id);
-  await notify(team, { title: `New project assigned: ${project.title}`, body: "You have been added to this project.", link: `/projects/${project._id}` });
+  await notify(team, { title: `New project assigned: ${project.title}`, body: "You have been added to this project.", link: `/projects/${project._id}`, email: { button: "Open project" } });
   await notify(await clientUserIds(String(project.client)), {
     title: `New project: ${project.title}`,
     body: "You can follow its progress in your portal.",

@@ -25,7 +25,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
   if (typeof b.done === "boolean") {
     t.done = b.done;
     t.doneAt = b.done ? new Date() : null;
-    if (b.done && String(t.createdBy) !== user.id) await notify([t.createdBy], { title: `${user.name} finished: ${t.title}`, link: "/today" });
+    if (b.done && String(t.createdBy) !== user.id) await notify([t.createdBy], { title: `${user.name} finished: ${t.title}`, link: "/today", email: { button: "Open My Day" } });
   }
   if (typeof b.title === "string" && b.title.trim()) t.title = b.title.trim().slice(0, 200);
   if (typeof b.description === "string") t.description = b.description.slice(0, 5000);
@@ -37,7 +37,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
   if (b.assignee && validId(String(b.assignee)) && String(b.assignee) !== String(t.assignee)) {
     if (!(await User.exists({ _id: b.assignee, role: { $in: STAFF }, status: { $ne: "disabled" } }))) return error("Choose a team member");
     t.assignee = b.assignee;
-    if (String(b.assignee) !== user.id) await notify([b.assignee], { title: `New task from ${user.name}: ${t.title}`, link: "/today" });
+    if (String(b.assignee) !== user.id) await notify([b.assignee], { title: `New task from ${user.name}: ${t.title}`, body: t.description ? t.description.slice(0, 500) : undefined, link: "/today", email: { button: "Open My Day" } });
   }
   await t.save();
   return json(t.toObject());

@@ -227,7 +227,7 @@ export async function updateConversation(user: CurrentUser, clientId: string, in
   const conv = await Conversation.findOneAndUpdate({ _id: before._id }, { $set: set }, { new: true });
   if (set.assignedTo && String(before.assignedTo || "") !== String(set.assignedTo) && String(set.assignedTo) !== user.id) {
     const client = await Client.findById(clientId).select("name company").lean<{ name: string; company?: string }>();
-    await notify([String(set.assignedTo)], { title: `${user.name} assigned you the ${client?.company || client?.name || "client"} chat`, link: `/inbox?c=${clientId}` });
+    await notify([String(set.assignedTo)], { title: `${user.name} assigned you the ${client?.company || client?.name || "client"} chat`, link: `/inbox?c=${clientId}`, email: { button: "Open chat" } });
   }
   return conv;
 }

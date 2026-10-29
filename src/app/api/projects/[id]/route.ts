@@ -60,7 +60,7 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
   if (previewChanged) await logActivity(project, user, "Preview link updated", true);
   if (addedTeam.length) {
     await logActivity(project, user, "Team updated", false);
-    await notify(addedTeam, { title: `New project assigned: ${project.title}`, body: `${user.name} added you to this project.`, link: `/projects/${project._id}` });
+    await notify(addedTeam, { title: `New project assigned: ${project.title}`, body: `${user.name} added you to this project.`, link: `/projects/${project._id}`, email: { button: "Open project" } });
   }
   return json(project);
 });

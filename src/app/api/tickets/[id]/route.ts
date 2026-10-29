@@ -59,7 +59,7 @@ export const PUT = handle(async (req: Request, { params }: Ctx) => {
     });
   }
   if (now.assignee && now.assignee !== before.assignee && now.assignee !== user.id) {
-    await notify([now.assignee], { title: `Assigned to you: ${ticket.number}`, body: ticket.title, link: `/tickets/${ticket._id}` });
+    await notify([now.assignee], { title: `Assigned to you: ${ticket.number}`, body: ticket.title, link: `/tickets/${ticket._id}`, email: { button: "Open ticket" } });
   }
   return json(ticket);
 });

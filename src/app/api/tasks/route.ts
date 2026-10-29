@@ -28,9 +28,10 @@ export const POST = handle(async (req: Request) => {
   if (!(await User.exists({ _id: assignee, role: { $in: STAFF }, status: { $ne: "disabled" } }))) return error("Choose a team member");
   const dueAt = b.dueAt ? new Date(b.dueAt) : null;
   if (dueAt && isNaN(dueAt.getTime())) return error("Choose a valid due date");
-  const task = await Task.create({ title, description: String(b.description || "").slice(0, 5000), dueAt, assignee, createdBy: user.id });
+  const description = String(b.description || "").slice(0, 5000);
+  const task = await Task.create({ title, description, dueAt, assignee, createdBy: user.id });
   if (assignee !== user.id) {
-    await notify([assignee], { title: `New task from ${user.name}: ${title}`, body: dueAt ? "Check the due date on My Day." : "See it on My Day.", link: "/today" });
+    await notify([assignee], { title: `New task from ${user.name}: ${title}`, body: [description.slice(0, 500), dueAt ? "It has a due date; check it on My Day." : ""].filter(Boolean).join(" ") || undefined, link: "/today", email: { button: "Open My Day" } });
   }
   return json(task, 201);
 });
