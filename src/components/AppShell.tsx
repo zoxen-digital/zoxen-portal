@@ -31,6 +31,7 @@ import {
   MessagesSquare,
   Contact,
   Send,
+  MapPinned,
 } from "lucide-react";
 import { MENU_GROUPS } from "./DealTabs";
 import { AskAIButton } from "./AskAI";
@@ -50,6 +51,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[]; sect
   { href: "/clients", label: "Clients", icon: Users, roles: ["super_admin"], section: "Work" },
   { href: "/queries", label: "Queries", icon: FolderKanban, roles: ["super_admin", "team_admin"], section: "Work" },
   { href: "/leads", label: "Leads", icon: Contact, roles: ["super_admin", "team_admin"], section: "Work" },
+  { href: "/finder", label: "Lead Finder", icon: MapPinned, roles: ["super_admin", "team_admin"], section: "Work" },
   { href: "/outreach", label: "Cold Email", icon: Send, roles: ["super_admin"], section: "Work" },
   { href: "/submissions", label: "Onboarding", icon: ClipboardList, roles: ["super_admin", "team_admin"], section: "Work" },
   { href: "/invoices", label: "Sales & Billing", icon: FileText, roles: ["super_admin"], section: "Business" },

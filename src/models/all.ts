@@ -5,6 +5,7 @@ import "./Client";
 import "./Contract";
 import "./Conversation";
 import "./Expense";
+import "./FinderLead";
 import "./Integration";
 import "./Invoice";
 import "./Lead";

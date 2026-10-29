@@ -5,6 +5,8 @@
  * Both services ask for a real User-Agent and light use, so we cache areas and query one city at a time.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 const UA = "ZoxenPortal/1.0 (business outreach; contact: support@zoxendigital.com)";
 
 /** Portal categories -> OpenStreetMap tags. */
@@ -26,6 +28,35 @@ export const CATEGORY_TAGS: Record<string, string[]> = {
   hotel: ['["tourism"="hotel"]', '["tourism"="guest_house"]'],
   florist: ['["shop"="florist"]'],
   "pet services": ['["shop"="pet_grooming"]', '["amenity"="veterinary"]'],
+  insurance: ['["office"="insurance"]'],
+  "cleaning service": ['["shop"="dry_cleaning"]', '["craft"="cleaning"]'],
+  "clothing store": ['["shop"="clothes"]'],
+  "driving school": ['["amenity"="driving_school"]'],
+};
+
+/** Same categories in Geoapify (faster, more reliable servers over the same OpenStreetMap data). */
+const GEO_CATS: Record<string, string> = {
+  restaurant: "catering.restaurant",
+  cafe: "catering.cafe",
+  "fast food": "catering.fast_food",
+  bakery: "commercial.food_and_drink.bakery",
+  bar: "catering.bar",
+  dentist: "healthcare.dentist",
+  clinic: "healthcare.clinic_or_praxis",
+  "beauty salon": "service.beauty.hairdresser,service.beauty",
+  spa: "service.beauty.spa",
+  gym: "sport.fitness.fitness_centre",
+  "car repair": "service.vehicle.repair.car",
+  "real estate": "office.estate_agent",
+  lawyer: "office.lawyer",
+  accountant: "office.accountant",
+  hotel: "accommodation.hotel",
+  florist: "commercial.florist",
+  "pet services": "pet.service,pet.veterinary",
+  insurance: "office.insurance",
+  "cleaning service": "service.cleaning",
+  "clothing store": "commercial.clothing",
+  "driving school": "education.driving_school",
 };
 
 /** Big brands are not our customers. */
@@ -85,8 +116,58 @@ function normalizeUrl(u: string) {
   }
 }
 
-/** Up to `limit` businesses of `category` in `city`, skipping chains. */
+/** Up to `limit` businesses of `category` in `city`, skipping chains. Geoapify first (when a key is set), the public OpenStreetMap servers as backup. */
 export async function discover(category: string, city: string, limit = 200, budgetMs = 45000): Promise<Found[]> {
+  if (process.env.GEOAPIFY_API_KEY && GEO_CATS[category.toLowerCase()]) {
+    try {
+      return await geoapify(category, city, limit);
+    } catch (e) {
+      if (/state or country|Could not find/.test((e as Error).message)) throw e;
+    }
+  }
+  return overpass(category, city, limit, budgetMs);
+}
+
+async function geoapify(category: string, city: string, limit: number): Promise<Found[]> {
+  const key = process.env.GEOAPIFY_API_KEY!;
+  const geo = await fetch(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(city)}&filter=countrycode:us,ca,gb,ae,au&format=json&limit=5&apiKey=${key}`, { signal: AbortSignal.timeout(15000) });
+  if (!geo.ok) throw new Error(`Location lookup failed (${geo.status})`);
+  const hits = ((await geo.json()) as { results?: { result_type: string; place_id: string; lat: number; lon: number }[] }).results || [];
+  if (!hits.length) throw new Error(`Could not find "${city}" on the map`);
+  const hit = hits.find((h) => ["city", "postcode", "suburb", "district", "county"].includes(h.result_type)) || hits[0]!;
+  if (["state", "country"].includes(hit.result_type)) throw new Error(`"${city}" is a whole state or country; add a city instead, e.g. "Los Angeles, CA"`);
+  const out: Found[] = [];
+  const seen = new Set<string>();
+  for (let offset = 0; out.length < limit && offset < 1000; offset += 100) {
+    const url = `https://api.geoapify.com/v2/places?categories=${GEO_CATS[category.toLowerCase()]}&filter=place:${hit.place_id}&limit=100&offset=${offset}&apiKey=${key}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`Map search failed (${res.status})`);
+    const features = ((await res.json()) as { features?: { properties: any }[] }).features || [];
+    for (const { properties: p } of features) {
+      const name = clean(p.name);
+      const raw = p.datasource?.raw || {};
+      if (!name || CHAINS.test(name) || raw.brand || raw["brand:wikidata"]) continue;
+      const sourceKey = raw.osm_id ? `osm:${raw.osm_type === "n" ? "node" : raw.osm_type === "w" ? "way" : "relation"}/${raw.osm_id}` : `geo:${p.place_id}`;
+      if (seen.has(sourceKey)) continue;
+      seen.add(sourceKey);
+      out.push({
+        sourceKey,
+        name,
+        category: category.toLowerCase(),
+        city,
+        address: clean(p.address_line2 || p.formatted),
+        phone: clean(p.contact?.phone || raw.phone || raw["contact:phone"]),
+        website: normalizeUrl(p.website || raw.website || raw["contact:website"] || ""),
+        email: clean(p.contact?.email || raw.email || raw["contact:email"]).toLowerCase(),
+      });
+      if (out.length >= limit) break;
+    }
+    if (features.length < 100) break;
+  }
+  return out;
+}
+
+async function overpass(category: string, city: string, limit: number, budgetMs: number): Promise<Found[]> {
   const tags = CATEGORY_TAGS[category.toLowerCase()];
   if (!tags) throw new Error(`Unknown category "${category}"`);
   const { lat, lon, r } = await spot(city);
