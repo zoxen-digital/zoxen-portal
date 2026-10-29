@@ -3,36 +3,37 @@ import { error, handle, json } from "@/lib/api";
 import { STAFF, apiUser } from "@/lib/session";
 import { escapeRegex } from "@/lib/utils";
 import { CATEGORY_TAGS, discover } from "@/lib/outreach/discover";
-import { FINDER_STATUSES, FinderLead } from "@/models/FinderLead";
+import { FINDER_STATUSES, FinderLead, ownerFilter } from "@/models/FinderLead";
 
 export const maxDuration = 60;
 const PAGE = 100;
 
 /** Found businesses, newest search first (filters: status, search text). */
 export const GET = handle(async (req: Request) => {
-  await apiUser(STAFF);
+  const user = await apiUser(STAFF);
   const u = new URL(req.url);
   const status = u.searchParams.get("status") || "";
   const q = (u.searchParams.get("q") || "").trim().slice(0, 80);
   const page = Math.max(1, Number(u.searchParams.get("page")) || 1);
-  const filter: Record<string, unknown> = {};
+  const mine = ownerFilter(user);
+  const filter: Record<string, unknown> = { ...mine };
   if ((FINDER_STATUSES as readonly string[]).includes(status)) filter.status = status;
   if (q) {
     const rx = { $regex: escapeRegex(q), $options: "i" };
-    filter.$or = [{ name: rx }, { phone: rx }, { website: rx }, { city: rx }, { category: rx }];
+    filter.$and = [{ $or: [{ name: rx }, { phone: rx }, { website: rx }, { city: rx }, { category: rx }] }];
   }
   await dbConnect();
   const [items, total, counts] = await Promise.all([
     FinderLead.find(filter).sort({ createdAt: -1, _id: 1 }).skip((page - 1) * PAGE).limit(PAGE).lean(),
     FinderLead.countDocuments(filter),
-    FinderLead.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }]),
+    FinderLead.aggregate([{ $match: mine }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
   ]);
   return json({ items, total, page, pageSize: PAGE, counts: Object.fromEntries(counts.map((c: { _id: string; n: number }) => [c._id, c.n])), categories: Object.keys(CATEGORY_TAGS) });
 });
 
 /** Search the map for a category in a city and keep the ones with a phone number. */
 export const POST = handle(async (req: Request) => {
-  await apiUser(STAFF);
+  const user = await apiUser(STAFF);
   const b = await req.json().catch(() => ({}));
   const category = String(b.category || "").toLowerCase();
   const city = String(b.city || "").trim().slice(0, 80);
@@ -48,12 +49,17 @@ export const POST = handle(async (req: Request) => {
   await dbConnect();
   let added = 0;
   for (const f of withPhone) {
-    const r = await FinderLead.updateOne(
-      { sourceKey: f.sourceKey },
-      { $setOnInsert: { sourceKey: f.sourceKey, name: f.name, phone: f.phone, website: f.website, address: f.address, category, city } },
+    try {
+      const r = await FinderLead.updateOne(
+      { owner: user.id, sourceKey: f.sourceKey },
+      { $setOnInsert: { owner: user.id, sourceKey: f.sourceKey, name: f.name, phone: f.phone, website: f.website, address: f.address, category, city } },
       { upsert: true }
     );
-    if (r.upsertedCount) added++;
+      if (r.upsertedCount) added++;
+    } catch (e) {
+      // Older databases still allow each business only once overall; skip it instead of failing.
+      if ((e as { code?: number }).code !== 11000) throw e;
+    }
   }
   return json({ found: found.length, withPhone: withPhone.length, added });
 });
