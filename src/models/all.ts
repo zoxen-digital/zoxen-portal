@@ -23,6 +23,7 @@ import "./RecurringPlan";
 import "./Referral";
 import "./Review";
 import "./Settings";
+import "./Task";
 import "./Ticket";
 import "./TrashItem";
 import "./User";

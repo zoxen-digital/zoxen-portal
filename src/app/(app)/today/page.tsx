@@ -5,6 +5,9 @@ import { STAFF, pageUser } from "@/lib/session";
 import { today, type TodayItem } from "@/lib/today";
 import { PageHeader, StatCard } from "@/components/ui";
 import { LocalTime } from "@/components/LocalTime";
+import { MyTasks } from "@/components/MyTasks";
+import { dbConnect } from "@/lib/db";
+import { User } from "@/models/User";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "My Day" };
@@ -59,7 +62,12 @@ function Section({ icon: Icon, title, hint, items, tone, empty, showTime }: { ic
 
 export default async function TodayPage() {
   const user = await pageUser(STAFF);
-  const d = await today(user);
+  await dbConnect();
+  const [d, people] = await Promise.all([
+    today(user),
+    User.find({ role: { $in: STAFF }, status: { $ne: "disabled" } }).select("name").sort({ name: 1 }).lean<{ _id: unknown; name: string }[]>(),
+  ]);
+  const team = people.map((p) => ({ _id: String(p._id), name: p.name }));
   const clear = !d.overdue.length && !d.dueToday.length && !d.waitingOnTeam.length && !d.blocked.length;
 
   return (
@@ -92,6 +100,8 @@ export default async function TodayPage() {
         {d.blocked.length > 0 && <Section icon={OctagonX} tone="text-red-500" title="Blocked projects" hint="Clear the blocker or escalate." items={d.blocked} empty="" />}
         <Section icon={Hourglass} tone="text-brand" title="Waiting on client" hint="Follow up if it has been more than 2 days." items={d.waitingOnClient} empty="Nothing waiting on clients." />
       </div>
+
+      <MyTasks me={user.id} team={team} />
     </div>
   );
 }
