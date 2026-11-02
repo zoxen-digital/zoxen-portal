@@ -4,6 +4,7 @@ import "./AuditLog";
 import "./Client";
 import "./Contract";
 import "./Conversation";
+import "./DemoSite";
 import "./Expense";
 import "./FinderLead";
 import "./Integration";

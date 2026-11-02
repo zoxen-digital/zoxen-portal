@@ -32,6 +32,7 @@ import {
   Contact,
   Send,
   MapPinned,
+  LayoutTemplate,
 } from "lucide-react";
 import { MENU_GROUPS } from "./DealTabs";
 import { AskAIButton } from "./AskAI";
@@ -56,6 +57,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; roles: RoleT[]; sect
   { href: "/submissions", label: "Onboarding", icon: ClipboardList, roles: ["super_admin", "team_admin"], section: "Work" },
   { href: "/invoices", label: "Sales & Billing", icon: FileText, roles: ["super_admin"], section: "Business" },
   { href: "/reviews", label: "Reviews & Referrals", icon: MessageSquareQuote, roles: ["super_admin"], section: "Business" },
+  { href: "/demos", label: "Demo Websites", icon: LayoutTemplate, roles: ["super_admin"], section: "Business" },
   { href: "/agent", label: "My Day", icon: Sun, roles: ["agent"], section: "Overview" },
   { href: "/agent/invoices", label: "Invoices", icon: FileText, roles: ["agent"], section: "Overview" },
   { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "agent"], section: "Business" },
