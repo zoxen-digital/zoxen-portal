@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "./ui";
 import { useDialogs } from "./Dialogs";
 
-type Site = { _id: string; url: string; name: string; industry: string; description: string; visible: boolean };
+type Site = { _id: string; url: string; name: string; industry: string; description: string; visible: boolean; shot?: string };
 
 const DEMO_HOST = "https://demo.zoxendigital.com";
 const slug = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -157,7 +157,7 @@ export function DemoSites() {
               <div key={s._id} className={cn("overflow-hidden rounded-xl border border-line bg-surface", !s.visible && "opacity-60")}>
                 <a href={s.url} target="_blank" rel="noreferrer" className="block aspect-[16/10] overflow-hidden bg-surface-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={shot(s.url)} alt={s.name} loading="lazy" className="h-full w-full object-cover object-top" />
+                  <img src={s.shot || shot(s.url)} alt={s.name} loading="lazy" className="h-full w-full object-cover object-top" />
                 </a>
                 <div className="space-y-2 p-3">
                   <input className="w-full bg-transparent text-sm font-bold text-heading outline-none focus:underline" defaultValue={s.name} onBlur={(e) => e.target.value.trim() && e.target.value !== s.name && patch(s, { name: e.target.value.trim() })} />

@@ -40,6 +40,8 @@ const DemoSiteSchema = new Schema(
     name: { type: String, required: true, trim: true },
     industry: { type: String, enum: DEMO_INDUSTRIES, default: "Other", index: true },
     description: { type: String, default: "" },
+    /** Clear screenshot taken after the page fully loads (Vercel Blob URL); empty until one is taken. */
+    shot: { type: String, default: "" },
     /** Hidden sites stay in the list but are not shown publicly. */
     visible: { type: Boolean, default: true },
   },
