@@ -43,6 +43,16 @@ export async function readSite(url: string) {
   }
 }
 
+/** Homepage screenshot from the free service (same size the demo site uses, so both share one render). */
+export const screenshotSource = (url: string) => `https://image.thum.io/get/width/640/crop/1000/noanimate/${url}`;
+
+/** Asks the service to make the screenshots now, so the first visitor does not wait for them. */
+export async function warmScreenshots(urls: string[]) {
+  for (let i = 0; i < urls.length; i += 5) {
+    await Promise.all(urls.slice(i, i + 5).map((u) => fetch(screenshotSource(u), { signal: AbortSignal.timeout(30000) }).then((r) => r.arrayBuffer()).catch(() => null)));
+  }
+}
+
 /** Readable name from the domain when nothing better is known: "theunionshawarma.ca" -> "Theunionshawarma". */
 export function nameFromUrl(url: string) {
   const h = new URL(url).hostname.split(".")[0] || url;

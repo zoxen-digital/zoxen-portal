@@ -11,8 +11,9 @@ type Site = { _id: string; url: string; name: string; industry: string; descript
 
 const DEMO_HOST = "https://demo.zoxendigital.com";
 const slug = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-/** Live screenshot of the homepage (free service, cached on their side). */
-const shot = (url: string) => `https://image.thum.io/get/width/480/crop/800/noanimate/${url}`;
+/** Screenshot through the portal, kept in the browser cache for a week. */
+const shot = (url: string) => `/api/demos/shot?u=${encodeURIComponent(url)}`;
+const CACHE_KEY = "zx-demo-sites";
 
 export function DemoSites() {
   const [items, setItems] = useState<Site[] | null>(null);
@@ -24,11 +25,25 @@ export function DemoSites() {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const { notify, confirm } = useDialogs();
 
+  // Show the last saved list straight away, then refresh it from the server.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      if (saved?.items) {
+        setItems((x) => x || saved.items);
+        setIndustries((x) => (x.length ? x : saved.industries));
+      }
+    } catch {}
+  }, []);
+
   const load = useCallback(async () => {
     try {
       const r = await api<{ items: Site[]; industries: string[] }>("/api/demos");
       setItems(r.items);
       setIndustries(r.industries);
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(r));
+      } catch {}
     } catch (e) {
       setItems((x) => x || []);
       notify((e as Error).message, "error");
