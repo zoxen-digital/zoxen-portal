@@ -53,6 +53,12 @@ export async function warmScreenshots(urls: string[]) {
   }
 }
 
+/** Tells demo.zoxendigital.com to show the new list now (best effort; it also refreshes every minute). */
+export async function refreshDemoSite() {
+  const base = process.env.DEMO_SITE_URL || "https://demo.zoxendigital.com";
+  await fetch(`${base}/api/revalidate`, { method: "POST", signal: AbortSignal.timeout(10000) }).catch(() => null);
+}
+
 /** Readable name from the domain when nothing better is known: "theunionshawarma.ca" -> "Theunionshawarma". */
 export function nameFromUrl(url: string) {
   const h = new URL(url).hostname.split(".")[0] || url;

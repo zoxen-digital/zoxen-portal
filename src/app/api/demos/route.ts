@@ -2,7 +2,7 @@ import { dbConnect } from "@/lib/db";
 import { error, handle, json } from "@/lib/api";
 import { ADMIN, apiUser } from "@/lib/session";
 import { after } from "next/server";
-import { classify, cleanSiteUrl, nameFromUrl, readSite, warmScreenshots } from "@/lib/demos";
+import { classify, cleanSiteUrl, nameFromUrl, readSite, refreshDemoSite, warmScreenshots } from "@/lib/demos";
 import { DEMO_INDUSTRIES, DemoSite } from "@/models/DemoSite";
 
 export const maxDuration = 60;
@@ -45,6 +45,9 @@ export const POST = handle(async (req: Request) => {
   }));
   await DemoSite.insertMany(docs, { ordered: false }).catch(() => {});
   // Screenshots get made after the response, so they are ready when someone opens the demo page.
-  after(() => warmScreenshots(docs.filter((d) => d.visible).map((d) => d.url)));
+  after(async () => {
+    await refreshDemoSite();
+    await warmScreenshots(docs.filter((d) => d.visible).map((d) => d.url));
+  });
   return json({ added: docs.length, skipped: urls.length - fresh.length, offline: docs.filter((d) => !d.visible).length }, 201);
 });

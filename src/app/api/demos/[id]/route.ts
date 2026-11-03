@@ -1,6 +1,8 @@
 import { dbConnect } from "@/lib/db";
 import { error, handle, json, validId } from "@/lib/api";
 import { ADMIN, apiUser } from "@/lib/session";
+import { after } from "next/server";
+import { refreshDemoSite } from "@/lib/demos";
 import { DEMO_INDUSTRIES, DemoSite } from "@/models/DemoSite";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -16,6 +18,7 @@ export const PATCH = handle(async (req: Request, { params }: Ctx) => {
   if (typeof b.visible === "boolean") set.visible = b.visible;
   await dbConnect();
   const d = await DemoSite.findByIdAndUpdate(id, { $set: set }, { new: true }).lean();
+  after(refreshDemoSite);
   return d ? json(d) : error("Not found", 404);
 });
 
@@ -25,5 +28,6 @@ export const DELETE = handle(async (_req: Request, { params }: Ctx) => {
   if (!validId(id)) return error("Not found", 404);
   await dbConnect();
   await DemoSite.deleteOne({ _id: id });
+  after(refreshDemoSite);
   return json({ ok: true });
 });

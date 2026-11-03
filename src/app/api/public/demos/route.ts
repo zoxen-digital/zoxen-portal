@@ -2,12 +2,12 @@ import { dbConnect } from "@/lib/db";
 import { handle } from "@/lib/api";
 import { DEMO_INDUSTRIES, DemoSite, industrySlug } from "@/models/DemoSite";
 
-/** Read-only list for demo.zoxendigital.com, cached at the edge for 5 minutes. */
+/** Read-only list for demo.zoxendigital.com. Not cached here: the demo site keeps its own copy and is told when it changes. */
 const HEADERS = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+  "Cache-Control": "no-store",
 };
 
 export const OPTIONS = () => new Response(null, { status: 204, headers: HEADERS });
