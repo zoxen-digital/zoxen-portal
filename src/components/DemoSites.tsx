@@ -23,7 +23,7 @@ export function DemoSites() {
   const [links, setLinks] = useState("");
   const [addIndustry, setAddIndustry] = useState("");
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const { notify, confirm } = useDialogs();
+  const { notify } = useDialogs();
 
   // Show the last saved list straight away, then refresh it from the server.
   useEffect(() => {
@@ -88,7 +88,6 @@ export function DemoSites() {
   }
 
   async function remove(s: Site) {
-    if (!(await confirm({ title: `Remove ${s.name}?`, tone: "danger", confirmText: "Remove" }))) return;
     setItems((x) => x && x.filter((i) => i._id !== s._id));
     await api(`/api/demos/${s._id}`, "DELETE").catch((e) => notify(e.message, "error"));
   }
